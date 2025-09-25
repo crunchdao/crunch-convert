@@ -112,9 +112,9 @@ import pyemd # EMD-signal @latest
 import pyemd # pyemd @latest
 ```
 
-## R imports via [rpy2](https://rpy2.github.io/)
+## R imports via rpy2
 
-For notebook users, the packages are automatically extracted from the importr("<name>") calls, which is provided by rpy2.
+For notebook users, the packages are automatically extracted from the `importr("<name>")` calls, which is provided by [rpy2](https://rpy2.github.io/).
 
 ```python
 # Import the `importr` function
