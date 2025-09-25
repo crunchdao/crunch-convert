@@ -1,0 +1,24 @@
+"""
+crunch-convert
+~~~~~~
+The crunch module to convert a notebook into multiple components!
+"""
+
+from crunch_convert.notebook._embedded import EmbeddedFile as EmbeddedFile
+from crunch_convert.notebook._notebook import ConverterError as ConverterError
+from crunch_convert.notebook._notebook import \
+    FlattenNotebook as FlattenNotebook
+from crunch_convert.notebook._notebook import \
+    InconsistantLibraryVersionError as InconsistantLibraryVersionError
+from crunch_convert.notebook._notebook import \
+    NotebookCellParseError as NotebookCellParseError
+from crunch_convert.notebook._notebook import \
+    RequirementVersionParseError as RequirementVersionParseError
+from crunch_convert.notebook._notebook import extract_cells as extract_cells
+from crunch_convert.notebook._requirement import \
+    ImportedRequirement as ImportedRequirement
+from crunch_convert.notebook._requirement import \
+    ImportedRequirementLanguage as ImportedRequirementLanguage
+
+# alias for compatibility with previous versions
+EmbedFile = EmbeddedFile

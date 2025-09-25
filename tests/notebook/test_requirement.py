@@ -1,0 +1,141 @@
+from crunch_convert.notebook import ImportedRequirement
+
+
+def test_merge_nothing():
+    a = ImportedRequirement(alias="a")
+    b = ImportedRequirement(alias="b")
+
+    success, _ = a.merge(b)
+
+    assert success
+    assert ("a", None, [], []) == (a.alias, a.name, a.extras, a.specs)
+
+
+def test_merge_ignore_if_set_name():
+    a = ImportedRequirement(alias="a", name="xyz")
+    b = ImportedRequirement(alias="b")
+
+    success, _ = a.merge(b)
+
+    assert success
+    assert ("a", "xyz", [], []) == (a.alias, a.name, a.extras, a.specs)
+
+
+def test_merge_ignore_if_set_extras():
+    a = ImportedRequirement(alias="a", extras=["tiny"])
+    b = ImportedRequirement(alias="b")
+
+    success, _ = a.merge(b)
+
+    assert success
+    assert ("a", None, ["tiny"], []) == (a.alias, a.name, a.extras, a.specs)
+
+
+def test_merge_ignore_if_set_full():
+    a = ImportedRequirement(alias="a", name="xyz", extras=["tiny"], specs=["==1"])
+    b = ImportedRequirement(alias="b")
+
+    success, _ = a.merge(b)
+
+    assert success
+    assert ("a", "xyz", ["tiny"], ["==1"]) == (a.alias, a.name, a.extras, a.specs)
+
+
+def test_merge_ignore_if_set_specs():
+    a = ImportedRequirement(alias="a", specs=["==1"])
+    b = ImportedRequirement(alias="b")
+
+    success, _ = a.merge(b)
+
+    assert success
+    assert ("a", None, [], ["==1"]) == (a.alias, a.name, a.extras, a.specs)
+
+
+def test_merge_name():
+    a = ImportedRequirement(alias="a")
+    b = ImportedRequirement(alias="b", name="xyz")
+
+    success, _ = a.merge(b)
+
+    assert success
+    assert ("a", "xyz", [], []) == (a.alias, a.name, a.extras, a.specs)
+
+
+def test_merge_extras():
+    a = ImportedRequirement(alias="a")
+    b = ImportedRequirement(alias="b", extras=["full"])
+
+    success, _ = a.merge(b)
+
+    assert success
+    assert ("a", None, ["full"], []) == (a.alias, a.name, a.extras, a.specs)
+
+
+def test_merge_specs():
+    a = ImportedRequirement(alias="a")
+    b = ImportedRequirement(alias="b", specs=["==1"])
+
+    success, _ = a.merge(b)
+
+    assert success
+    assert ("a", None, [], ["==1"]) == (a.alias, a.name, a.extras, a.specs)
+
+
+def test_merge_specs_and_extras():
+    a = ImportedRequirement(alias="a")
+    b = ImportedRequirement(alias="b", extras=["full"], specs=["==1"])
+
+    success, _ = a.merge(b)
+
+    assert success
+    assert ("a", None, ["full"], ["==1"]) == (a.alias, a.name, a.extras, a.specs)
+
+
+def test_merge_different_name():
+    a = ImportedRequirement(alias="a", name="abc")
+    b = ImportedRequirement(alias="b", name="def", extras=["full"], specs=["==1"])
+
+    success, message = a.merge(b)
+
+    assert not success
+    assert message == "name is different"
+
+
+def test_merge_different_extras():
+    a = ImportedRequirement(alias="a", extras=["tiny"])
+    b = ImportedRequirement(alias="b", extras=["full"])
+
+    success, message = a.merge(b)
+
+    assert not success
+    assert message == "extras are different"
+
+
+def test_merge_different_specs():
+    a = ImportedRequirement(alias="a", specs=["==1"])
+    b = ImportedRequirement(alias="b", specs=["==2"])
+
+    success, message = a.merge(b)
+
+    assert not success
+    assert message == "specs are different"
+
+
+def test_merge_different_extras_and_specs():
+    a = ImportedRequirement(alias="a", extras=["tiny"], specs=["==1"])
+    b = ImportedRequirement(alias="b", extras=["full"], specs=["==2"])
+
+    success, message = a.merge(b)
+
+    assert not success
+    assert message == "both extras and specs are different"
+
+
+def test_merge_different_full():
+    a = ImportedRequirement(alias="a", name="abc", extras=["tiny"], specs=["==1"])
+    b = ImportedRequirement(alias="b", name="def", extras=["full"], specs=["==2"])
+
+    success, message = a.merge(b)
+
+    assert not success
+    assert message == "name, extras and specs are all different"
