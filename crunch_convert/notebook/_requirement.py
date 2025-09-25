@@ -34,7 +34,7 @@ class ImportedRequirement:
         if self.language != other.language:
             raise ValueError(
                 f"cannot merge requirements with different languages: "
-                f"{self.language} != {other.language}"
+                f"{self.language.name} != {other.language.name}"
             )
 
         errors: list[str] = []

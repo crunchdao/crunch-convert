@@ -1,4 +1,7 @@
-from crunch_convert.notebook import ImportedRequirement
+import pytest
+
+from crunch_convert.notebook import (ImportedRequirement,
+                                     ImportedRequirementLanguage)
 
 
 def test_merge_nothing():
@@ -89,6 +92,16 @@ def test_merge_specs_and_extras():
 
     assert success
     assert ("a", None, ["full"], ["==1"]) == (a.alias, a.name, a.extras, a.specs)
+
+
+def test_merge_different_language():
+    a = ImportedRequirement(alias="a", language=ImportedRequirementLanguage.PYTHON)
+    b = ImportedRequirement(alias="b", language=ImportedRequirementLanguage.R)
+
+    with pytest.raises(ValueError) as excinfo:
+        a.merge(b)
+
+    assert "cannot merge requirements with different languages: PYTHON != R" == str(excinfo.value)
 
 
 def test_merge_different_name():
