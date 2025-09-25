@@ -4,10 +4,6 @@ PIP=$(PYTHON) -m pip
 install:
 	$(PIP) install -e .[test]
 
-install-runner:
-	$(PIP) install -r requirements/runner.txt
-	$(PIP) install --no-dependencies -e .
-
 uninstall:
 	$(PIP) uninstall crunch-convert
 
