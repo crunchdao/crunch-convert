@@ -3,13 +3,13 @@ import textwrap
 import pytest
 from parameterized import parameterized  # type: ignore
 
-from crunch_convert.notebook import NotebookCellParseError, extract_cells
+from crunch_convert.notebook import NotebookCellParseError, extract_from_cells
 
 from ._shared import cell
 
 
 def test_normal():
-    flatten = extract_cells([
+    flatten = extract_from_cells([
         cell("a", "code", [
             "# Hello World",
         ]),
@@ -45,7 +45,7 @@ def test_normal():
 
 
 def test_keep_commands():
-    flatten = extract_cells([
+    flatten = extract_from_cells([
         cell("a", "code", [
             "# @crunch/keep:on",
             "a = 42",
@@ -79,7 +79,7 @@ def test_keep_commands():
 
 
 def test_pip_escape():
-    flatten = extract_cells([
+    flatten = extract_from_cells([
         cell("a", "code", [
             "pip install pandas",
             "pip3 install pandas",
@@ -96,7 +96,7 @@ def test_pip_escape():
 
 def test_invalid_syntax():
     with pytest.raises(NotebookCellParseError) as excinfo:
-        extract_cells([
+        extract_from_cells([
             cell("a", "code", [
                 "invalid code",
             ]),
@@ -411,7 +411,7 @@ def test_syntax(cell_content: str, expected: str):
     cell_content = textwrap.dedent(cell_content).lstrip()
     expected = textwrap.dedent(expected).lstrip() if expected else cell_content
 
-    flatten = extract_cells([
+    flatten = extract_from_cells([
         cell("a", "code", cell_content.splitlines()),
     ])
 

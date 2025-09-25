@@ -73,3 +73,19 @@ class ImportedRequirement:
             self.specs = other.specs
 
         return True, None
+
+    def __str__(self):
+        line = self.name if self.name else self.alias
+
+        if len(self.extras):
+            line += f"[{','.join(self.extras)}]"
+
+        if len(self.specs):
+            line += ','.join(self.specs)
+
+        if not self.name:
+            line += f"  # unknown name, using alias instead"
+        else:
+            line += f"  # alias of '{self.alias}'"
+
+        return line

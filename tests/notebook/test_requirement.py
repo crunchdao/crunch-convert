@@ -152,3 +152,21 @@ def test_merge_different_full():
 
     assert not success
     assert message == "name, extras and specs are all different"
+
+
+def test_str_alias_only():
+    a = ImportedRequirement(alias="a")
+
+    assert "a  # unknown name, using alias instead" == str(a)
+
+
+def test_str_with_name():
+    a = ImportedRequirement(alias="a", name="abc")
+
+    assert "abc  # alias of 'a'" == str(a)
+
+
+def test_str_full():
+    a = ImportedRequirement(alias="a", name="abc", extras=["tiny"], specs=["==1"])
+
+    assert "abc[tiny]==1  # alias of 'a'" == str(a)

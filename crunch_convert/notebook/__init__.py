@@ -14,7 +14,10 @@ from crunch_convert.notebook._notebook import \
     NotebookCellParseError as NotebookCellParseError
 from crunch_convert.notebook._notebook import \
     RequirementVersionParseError as RequirementVersionParseError
-from crunch_convert.notebook._notebook import extract_cells as extract_cells
+from crunch_convert.notebook._notebook import \
+    extract_from_cells as extract_from_cells
+from crunch_convert.notebook._notebook import \
+    extract_from_file as extract_from_file
 from crunch_convert.notebook._requirement import \
     ImportedRequirement as ImportedRequirement
 from crunch_convert.notebook._requirement import \

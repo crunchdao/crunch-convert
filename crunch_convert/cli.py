@@ -6,7 +6,7 @@ import click
 from crunch_convert.__version__ import __version__
 from crunch_convert.notebook import (ConverterError,
                                      InconsistantLibraryVersionError,
-                                     NotebookCellParseError, extract_cells)
+                                     NotebookCellParseError, extract_from_file)
 from crunch_convert.notebook._utils import print_indented
 
 
@@ -25,18 +25,20 @@ def notebook(
     notebook_file_path: str,
     python_file_path: str,
 ):
-    with open(notebook_file_path) as fd:
-        notebook = json.load(fd)
-
     try:
-        cells = notebook["cells"]
-
-        flatten = extract_cells(
-            cells=cells,
+        flatten = extract_from_file(
+            notebook_file_path,
             print=print,
+            validate=True,
         )
+    except IOError as error:
+        print(f"{notebook_file_path}: cannot read notebook file: {error}")
+        raise click.Abort()
+    except json.JSONDecodeError as error:
+        print(f"{notebook_file_path}: cannot parse notebook file: {error}")
+        raise click.Abort()
     except ConverterError as error:
-        print(f"convert failed: {error}")
+        print(f"{notebook_file_path}: convert failed: {error}")
 
         if isinstance(error, NotebookCellParseError):
             print(f"  cell: {error.cell_id} ({error.cell_index})")

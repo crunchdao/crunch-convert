@@ -12,6 +12,8 @@ This Python library is designed for the [CrunchDAO Platform](https://hub.crunchd
   - [Embedded Files](#embedded-files)
 - [Installation](#installation)
 - [Usage](#usage)
+  - [Via the CLI](#via-the-cli)
+  - [Via the Code](#via-the-code)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -161,8 +163,29 @@ pip install --upgrade crunch-convert
 
 # Usage
 
-```python
+## Via the CLI
+
+```bash
 crunch-convert notebook my-notebook.ipynb
+```
+
+## Via the Code
+
+```python
+from crunch_convert.notebook import extract_from_file
+
+flatten = extract_from_file("notebook.ipynb")
+
+with open("main.py", "w") as fd:
+  fd.write(flatten.source_code)
+
+with open("requirements.txt", "w") as fd:
+  for requirement in flatten.requirements:
+    fd.write(str(requirement) + "\n")
+
+for embedded_file in flatten.embedded_files:
+  with open(embedded_file.normalized_path, "w") as fd:
+    fd.write(embedded_file.content)
 ```
 
 # Contributing

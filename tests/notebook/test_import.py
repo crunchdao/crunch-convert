@@ -5,13 +5,13 @@ import pytest
 from crunch_convert.notebook import (ImportedRequirement,
                                      InconsistantLibraryVersionError,
                                      RequirementVersionParseError,
-                                     extract_cells)
+                                     extract_from_cells)
 
 from ._shared import cell
 
 
 def test_normal():
-    flatten = extract_cells([
+    flatten = extract_from_cells([
         cell("a", "code", [
             "import hello",
             "import world # == 42",
@@ -29,7 +29,7 @@ def test_normal():
 
 
 def test_latest_version():
-    flatten = extract_cells([
+    flatten = extract_from_cells([
         cell("a", "code", [
             "import hello # @latest",
             "import world # pandas @latest",
@@ -44,7 +44,7 @@ def test_latest_version():
 
 def test_inconsistant_version():
     with pytest.raises(InconsistantLibraryVersionError):
-        extract_cells([
+        extract_from_cells([
             cell("a", "code", [
                 "import hello # == 1",
                 "import hello # == 2",
@@ -54,7 +54,7 @@ def test_inconsistant_version():
 
 def test_version_parse():
     with pytest.raises(RequirementVersionParseError):
-        extract_cells([
+        extract_from_cells([
             cell("a", "code", [
                 "import hello # == aaa",
             ])
@@ -62,7 +62,7 @@ def test_version_parse():
 
 
 def test_one_specific_and_one_generic():
-    flatten = extract_cells([
+    flatten = extract_from_cells([
         cell("a", "code", [
             "import hello # == 1",
             "import hello",
@@ -73,7 +73,7 @@ def test_one_specific_and_one_generic():
         ImportedRequirement(alias="hello", specs=["==1"])
     ]
 
-    flatten = extract_cells([
+    flatten = extract_from_cells([
         cell("a", "code", [
             "import hello",
             "import hello # == 1",
@@ -84,7 +84,7 @@ def test_one_specific_and_one_generic():
         ImportedRequirement(alias="hello", specs=["==1"])
     ]
 
-    flatten = extract_cells([
+    flatten = extract_from_cells([
         cell("a", "code", [
             "import hello",
             "import hello # == 1",
@@ -98,7 +98,7 @@ def test_one_specific_and_one_generic():
 
 
 def test_import_in_try_except():
-    flatten = extract_cells([
+    flatten = extract_from_cells([
         cell("a", "code", [
             "try:",
             "    import hello",
@@ -122,7 +122,7 @@ def test_import_in_try_except():
 
 
 def test_import_with_commented():
-    flatten = extract_cells([
+    flatten = extract_from_cells([
         cell("a", "code", [
             "from pandas import DataFrame #, Series",
             "import pandas # Import important tools"

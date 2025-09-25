@@ -2,13 +2,13 @@ import textwrap
 
 from crunch_convert.notebook import (ImportedRequirement,
                                      ImportedRequirementLanguage,
-                                     extract_cells)
+                                     extract_from_cells)
 
 from ._shared import cell
 
 
 def test_normal():
-    flatten = extract_cells([
+    flatten = extract_from_cells([
         cell("a", "code", [
             "from rpy2.robjects.packages import importr",
             "base = importr('base')",
@@ -24,7 +24,7 @@ def test_normal():
 
 
 def test_normal_with_type():
-    flatten = extract_cells([
+    flatten = extract_from_cells([
         cell("a", "code", [
             "from rpy2.robjects.packages import importr",
             "base: dict = importr('base')",
@@ -40,7 +40,7 @@ def test_normal_with_type():
 
 
 def test_importr_not_commented():
-    flatten = extract_cells([
+    flatten = extract_from_cells([
         cell("a", "code", [
             "from rpy2.robjects.packages import importr",
             "a = 42",
@@ -60,7 +60,7 @@ def test_importr_not_commented():
 
 
 def test_not_right_function_name():
-    flatten = extract_cells([
+    flatten = extract_from_cells([
         cell("a", "code", [
             "from rpy2.robjects.packages import importr as r_import",
             "base = r_import('base')",
@@ -94,7 +94,7 @@ def test_call_argument_name_empty_string():
 
 
 def _test_no_rimport_found(line: str):
-    flatten = extract_cells([
+    flatten = extract_from_cells([
         cell("a", "code", [
             "from rpy2.robjects.packages import importr",
             f"base = {line}",

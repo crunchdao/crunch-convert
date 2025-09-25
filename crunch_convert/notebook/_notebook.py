@@ -1,4 +1,5 @@
 import ast
+import json
 import os
 import py_compile
 import re
@@ -14,7 +15,7 @@ import requirements
 from crunch_convert.notebook._embedded import EmbeddedFile
 from crunch_convert.notebook._r import is_r_import
 from crunch_convert.notebook._requirement import (ImportedRequirement,
-                                         ImportedRequirementLanguage)
+                                                  ImportedRequirementLanguage)
 from crunch_convert.notebook._utils import cut_crlf, strip_hashes
 
 _FAKE_PACKAGE_NAME = "x__fake_package_name__"
@@ -30,6 +31,9 @@ _CRUNCH_KEEP_OFF = "@crunch/keep:off"
 JUPYTER_MAGIC_COMMAND_PATTERN = r"^(\s*?)(!|%|pip3? )"
 
 _EMPTY_EXTRAS_AND_SPECS: Tuple[List[str], List[str]] = ([], [])
+
+
+LogFunction = Callable[[str], None]
 
 
 def strip_packages(name: str):
@@ -92,7 +96,7 @@ class InconsistantLibraryVersionError(ConverterError):
 
 
 def _extract_import_version(
-    log: Callable[[str], None],
+    log: LogFunction,
     comment_node: Optional[libcst.Comment]
 ) -> Optional[ImportInfo]:
     if comment_node is None:
@@ -157,7 +161,7 @@ def _evaluate_name(node: libcst.CSTNode) -> str:
 
 
 def _convert_python_import(
-    log: Callable[[str], None],
+    log: LogFunction,
     import_node: ImportNodeType,
     comment_node: Optional[libcst.Comment]
 ) -> List[ImportedRequirement]:
@@ -201,7 +205,7 @@ def _convert_python_import(
 def _add_to_packages(
     imported_requirements: Dict[str, ImportedRequirement],
     new_requirements: List[ImportedRequirement],
-    log: Callable[[str], None],
+    log: LogFunction,
 ):
     for new in new_requirements:
         package_name = new.alias
@@ -387,7 +391,7 @@ def _jupyter_replacer(match: Match[str]) -> str:
 
 def _extract_code_cell(
     cell_source: List[str],
-    log: Callable[[str], None],
+    log: LogFunction,
     module: List[str],
     imported_requirements: DefaultDict[ImportedRequirementLanguage, Dict[str, ImportedRequirement]],
 ):
@@ -452,7 +456,7 @@ def _extract_code_cell(
 
 def _extract_markdown_cell(
     cell_source: List[str],
-    log: Callable[[str], None],
+    log: LogFunction,
     embedded_files: Dict[str, EmbeddedFile],
 ):
     if not len(cell_source):
@@ -560,10 +564,10 @@ class FlattenNotebook:
     requirements: List["ImportedRequirement"]
 
 
-def extract_cells(
+def extract_from_cells(
     cells: List[Any],
     *,
-    print: Optional[Callable[[str], None]] = print,
+    print: Optional[LogFunction] = print,
     validate: bool = True,
 ) -> FlattenNotebook:
     if print is None:
@@ -616,4 +620,22 @@ def extract_cells(
             for requirements in imported_requirements.values()
             for requirement in list(requirements.values())
         ],
+    )
+
+
+def extract_from_file(
+    path: str,
+    *,
+    print: Optional[LogFunction] = None,
+    validate: bool = True,
+) -> FlattenNotebook:
+    with open(path) as fd:
+        notebook = json.load(fd)
+
+    cells = notebook["cells"]
+
+    return extract_from_cells(
+        cells,
+        print=print,
+        validate=validate,
     )

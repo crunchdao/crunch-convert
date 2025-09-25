@@ -1,13 +1,13 @@
 import pytest
 
 from crunch_convert.notebook import (EmbeddedFile, NotebookCellParseError,
-                                     extract_cells)
+                                     extract_from_cells)
 
 from ._shared import cell
 
 
 def test_normal():
-    flatten = extract_cells([
+    flatten = extract_from_cells([
         cell("a", "markdown", [
             "---",
             "file: ./a.txt",
@@ -31,7 +31,7 @@ def test_normal():
 
 def test_root_not_a_dict():
     with pytest.raises(NotebookCellParseError) as excinfo:
-        extract_cells([
+        extract_from_cells([
             cell("a", "markdown", [
                 "---",
                 "- 42",
@@ -46,7 +46,7 @@ def test_root_not_a_dict():
 
 def test_file_not_specified():
     with pytest.raises(NotebookCellParseError) as excinfo:
-        extract_cells([
+        extract_from_cells([
             cell("a", "markdown", [
                 "---",
                 "file: readme.md",
@@ -65,7 +65,7 @@ def test_file_not_specified():
 
 
 def test_separator():
-    flatten = extract_cells([
+    flatten = extract_from_cells([
         cell("a", "markdown", [
             "---",
             "<!-- content -->",
@@ -75,7 +75,7 @@ def test_separator():
     assert 0 == len(flatten.embedded_files)
     assert "" == flatten.source_code
 
-    flatten = extract_cells([
+    flatten = extract_from_cells([
         cell("a", "markdown", [
             "---",
             "",  # empty line
