@@ -10,7 +10,7 @@ class ImportedRequirementLanguage(Enum):
     R = "R"
 
 
-@dataclass(kw_only=True)
+@dataclass()
 class ImportedRequirement:
     alias: str
     name: Optional[str] = None
