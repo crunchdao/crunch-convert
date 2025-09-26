@@ -52,7 +52,7 @@ notebook_paths = list(_get_notebook_paths())
     ],
     skip_on_empty=True
 )
-@pytest.mark.skipif(len(notebook_paths) == 0, reason="Requires Python 3.8 or higher")
+@pytest.mark.skipif(len(notebook_paths) == 0, reason="No notebook paths found.")
 def test_convert(notebook_path: str):
     runner = CliRunner()
 
