@@ -11,7 +11,7 @@ test:
 	$(PYTHON) -m pytest -v
 
 test-with-coverage:
-	$(PYTHON) -m pytest --cov=crunch_convert --cov-report=html -v
+	$(PYTHON) -m pytest --cov=crunch_convert --cov-report=html -vv
 
 build:
 	rm -rf build *.egg-info dist

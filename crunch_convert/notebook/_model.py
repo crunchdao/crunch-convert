@@ -1,13 +1,8 @@
 from dataclasses import dataclass, field
-from enum import Enum
 from typing import List, Optional, Tuple
 
+from crunch_convert._model import RequirementLanguage
 from crunch_convert.notebook._utils import list_of_string_factory
-
-
-class ImportedRequirementLanguage(Enum):
-    PYTHON = "PYTHON"
-    R = "R"
 
 
 @dataclass()
@@ -16,7 +11,7 @@ class ImportedRequirement:
     name: Optional[str] = None
     extras: List[str] = field(default_factory=list_of_string_factory)
     specs: List[str] = field(default_factory=list_of_string_factory)
-    language: ImportedRequirementLanguage = ImportedRequirementLanguage.PYTHON
+    language: RequirementLanguage = RequirementLanguage.PYTHON
 
     @property
     def extras_and_specs(self):
@@ -74,18 +69,9 @@ class ImportedRequirement:
 
         return True, None
 
-    def __str__(self):
-        line = self.name if self.name else self.alias
 
-        if len(self.extras):
-            line += f"[{','.join(self.extras)}]"
-
-        if len(self.specs):
-            line += ','.join(self.specs)
-
-        if not self.name:
-            line += f"  # unknown name, using alias instead"
-        else:
-            line += f"  # alias of '{self.alias}'"
-
-        return line
+@dataclass()
+class EmbeddedFile:
+    path: str
+    normalized_path: str
+    content: str

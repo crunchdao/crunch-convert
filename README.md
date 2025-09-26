@@ -5,17 +5,61 @@
 This Python library is designed for the [CrunchDAO Platform](https://hub.crunchdao.com/), exposing the conversion tools in a very small CLI.
 
 - [Crunch Convert Tool](#crunch-convert-tool)
+- [Installation](#installation)
+- [Usage](#usage)
+  - [Convert a Notebook](#convert-a-notebook)
 - [Features](#features)
   - [Automatic line commenting](#automatic-line-commenting)
   - [Specifying package versions](#specifying-package-versions)
   - [R imports via rpy2](#r-imports-via-rpy2)
   - [Embedded Files](#embedded-files)
-- [Installation](#installation)
-- [Usage](#usage)
-  - [Via the CLI](#via-the-cli)
-  - [Via the Code](#via-the-code)
 - [Contributing](#contributing)
 - [License](#license)
+
+# Installation
+
+Use [pip](https://pypi.org/project/crunch-convert/) to install the `crunch-convert`.
+
+```bash
+pip install --upgrade crunch-convert
+```
+
+# Usage
+
+## Convert a Notebook
+
+```bash
+crunch-convert notebook ./my-notebook.ipynb --write-requirements.txt
+```
+
+```python
+from crunch_convert.notebook import extract_from_file
+from crunch_convert.requirements_txt import CrunchHubWhitelist, format_files_from_imported
+
+flatten = extract_from_file("notebook.ipynb")
+
+# Write the main.py
+with open("main.py", "w") as fd:
+  fd.write(flatten.source_code)
+
+# Map the imported requirements using the Crunch Hub's whitelist
+whitelist = CrunchHubWhitelist()
+requirements_files = format_files_from_imported(
+  flatten.requirements,
+  header="extracted from a notebook",
+  whitelist=whitelist,
+)
+
+# Write the requirements.txt files (Python and/or R)
+for requirement_language, content in requirements_files.items():
+  with open(requirement_language.txt_file_name, "w") as fd:
+    fd.write(content)
+
+# Write the embedded files
+for embedded_file in flatten.embedded_files:
+  with open(embedded_file.normalized_path, "w") as fd:
+    fd.write(embedded_file.content)
+```
 
 # Features
 
@@ -75,7 +119,7 @@ Since submitting a notebook does not include a `requirements.txt`, users can ins
 import pandas # == 1.3
 import sklearn # >= 1.2, < 2.0
 import tqdm # [foo, bar]
-import scikit # ~= 1.4.2
+import sklearn # ~= 1.4.2
 from requests import Session # == 1.5
 ```
 
@@ -152,41 +196,6 @@ Aenean rutrum condimentum ornare.
 Submitting multiple cells with the same file name will be rejected.
 
 While the focus is on Markdown files, any text file will be accepted. Including but not limited to: `.txt`, `.yaml`, `.json`, ...
-
-# Installation
-
-Use [pip](https://pypi.org/project/crunch-convert/) to install the `crunch-convert`.
-
-```bash
-pip install --upgrade crunch-convert
-```
-
-# Usage
-
-## Via the CLI
-
-```bash
-crunch-convert notebook my-notebook.ipynb
-```
-
-## Via the Code
-
-```python
-from crunch_convert.notebook import extract_from_file
-
-flatten = extract_from_file("notebook.ipynb")
-
-with open("main.py", "w") as fd:
-  fd.write(flatten.source_code)
-
-with open("requirements.txt", "w") as fd:
-  for requirement in flatten.requirements:
-    fd.write(str(requirement) + "\n")
-
-for embedded_file in flatten.embedded_files:
-  with open(embedded_file.normalized_path, "w") as fd:
-    fd.write(embedded_file.content)
-```
 
 # Contributing
 

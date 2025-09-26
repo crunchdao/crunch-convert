@@ -12,10 +12,9 @@ import libcst
 import yaml
 
 import requirements
-from crunch_convert.notebook._embedded import EmbeddedFile
+from crunch_convert._model import RequirementLanguage
+from crunch_convert.notebook._model import (EmbeddedFile, ImportedRequirement)
 from crunch_convert.notebook._r import is_r_import
-from crunch_convert.notebook._requirement import (ImportedRequirement,
-                                                  ImportedRequirementLanguage)
 from crunch_convert.notebook._utils import cut_crlf, strip_hashes
 
 _FAKE_PACKAGE_NAME = "x__fake_package_name__"
@@ -196,7 +195,7 @@ def _convert_python_import(
             name=package_name,
             extras=extras,
             specs=specs,
-            language=ImportedRequirementLanguage.PYTHON
+            language=RequirementLanguage.PYTHON
         )
         for name in names
     ]
@@ -393,7 +392,7 @@ def _extract_code_cell(
     cell_source: List[str],
     log: LogFunction,
     module: List[str],
-    imported_requirements: DefaultDict[ImportedRequirementLanguage, Dict[str, ImportedRequirement]],
+    imported_requirements: DefaultDict[RequirementLanguage, Dict[str, ImportedRequirement]],
 ):
     source = "\n".join(
         re.sub(JUPYTER_MAGIC_COMMAND_PATTERN, _jupyter_replacer, line)
@@ -422,7 +421,7 @@ def _extract_code_cell(
         new_requirements = _convert_python_import(log, import_node, comment_node)
 
         _add_to_packages(
-            imported_requirements[ImportedRequirementLanguage.PYTHON],
+            imported_requirements[RequirementLanguage.PYTHON],
             new_requirements,
             log,
         )
@@ -431,13 +430,13 @@ def _extract_code_cell(
         new_requirements = [
             ImportedRequirement(
                 alias=name,
-                language=ImportedRequirementLanguage.R
+                language=RequirementLanguage.R
             )
             for name in transformer.r_import_names
         ]
 
         _add_to_packages(
-            imported_requirements[ImportedRequirementLanguage.R],
+            imported_requirements[RequirementLanguage.R],
             new_requirements,
             log,
         )
@@ -573,7 +572,7 @@ def extract_from_cells(
     if print is None:
         def print(_): return None
 
-    imported_requirements: DefaultDict[ImportedRequirementLanguage, Dict[str, ImportedRequirement]] = defaultdict(dict)
+    imported_requirements: DefaultDict[RequirementLanguage, Dict[str, ImportedRequirement]] = defaultdict(dict)
     module: List[str] = []
     embed_files: Dict[str, EmbeddedFile] = {}
 
