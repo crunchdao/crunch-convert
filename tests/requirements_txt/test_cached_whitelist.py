@@ -1,8 +1,7 @@
 from typing import Optional
 
-from crunch_convert._model import RequirementLanguage
-from crunch_convert.requirements_txt._whitelist import (CachedWhitelist,
-                                                        Library, Whitelist)
+from crunch_convert import RequirementLanguage
+from crunch_convert.requirements_txt import CachedWhitelist, Library, Whitelist
 
 from ._libraries import sklearn_library
 

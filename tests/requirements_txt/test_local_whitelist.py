@@ -1,9 +1,8 @@
 import pytest
 
 from crunch_convert._model import RequirementLanguage
-from crunch_convert.requirements_txt import LocalWhitelist
-from crunch_convert.requirements_txt._whitelist import \
-    MultipleLibraryAliasCandidateException
+from crunch_convert.requirements_txt import (
+    LocalWhitelist, MultipleLibraryAliasCandidateException)
 
 from ._libraries import (emd_signal_library, pandas_in_r_library,
                          pandas_library, pyemd_library, sklearn_library)

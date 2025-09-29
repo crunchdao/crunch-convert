@@ -3,6 +3,14 @@ from crunch_convert.requirements_txt._formatter import \
     format_files_from_imported as format_files_from_imported
 from crunch_convert.requirements_txt._formatter import \
     format_files_from_named as format_files_from_named
+from crunch_convert.requirements_txt._freeze import \
+    CrunchHubVersionFinder as CrunchHubVersionFinder
+from crunch_convert.requirements_txt._freeze import \
+    LocalSitePackageVersionFinder as LocalSitePackageVersionFinder
+from crunch_convert.requirements_txt._freeze import \
+    VersionFinder as VersionFinder
+from crunch_convert.requirements_txt._freeze import \
+    freeze_if_required as freeze_if_required
 from crunch_convert.requirements_txt._model import \
     NamedRequirement as NamedRequirement
 from crunch_convert.requirements_txt._whitelist import \
@@ -12,4 +20,7 @@ from crunch_convert.requirements_txt._whitelist import \
 from crunch_convert.requirements_txt._whitelist import Library as Library
 from crunch_convert.requirements_txt._whitelist import \
     LocalWhitelist as LocalWhitelist
+from crunch_convert.requirements_txt._whitelist import \
+    MultipleLibraryAliasCandidateException as \
+    MultipleLibraryAliasCandidateException
 from crunch_convert.requirements_txt._whitelist import Whitelist as Whitelist

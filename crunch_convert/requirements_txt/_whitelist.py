@@ -23,6 +23,7 @@ class Library:
     name: str
     alias: Optional[str]
     standard: bool
+    freeze: bool
 
 
 class Whitelist(ABC):
@@ -65,6 +66,8 @@ class CachedWhitelist(Whitelist):
         self,
         delegate: Whitelist,
     ):
+        super().__init__()
+
         self._delegate = delegate
 
         self._name_cache: dict[CacheCompositeKey, Library] = {}
@@ -121,8 +124,11 @@ class CrunchHubWhitelist(Whitelist):
 
     def __init__(
         self,
+        *,
         api_base_url: str = "https://api.hub.crunchdao.com/",
     ):
+        super().__init__()
+
         self._api_base_url = api_base_url
 
     def find_library(
@@ -183,6 +189,7 @@ class CrunchHubWhitelist(Whitelist):
             name=item["name"],
             alias=alias,
             standard=item["standard"],
+            freeze=item["freeze"],
         )
 
 
@@ -192,6 +199,8 @@ class LocalWhitelist(Whitelist):
         self,
         libraries: List[Library]
     ):
+        super().__init__()
+
         self._library_by_name: Dict[CacheCompositeKey, Library] = {}
         self._libraries_by_alias: Dict[CacheCompositeKey, List[Library]] = defaultdict(list)
 

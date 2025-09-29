@@ -1,9 +1,9 @@
-from crunch_convert._model import RequirementLanguage
-from crunch_convert.notebook._model import ImportedRequirement
-from crunch_convert.requirements_txt._formatter import (
-    format_files_from_imported, format_files_from_named, format_line)
-from crunch_convert.requirements_txt._model import NamedRequirement
-from crunch_convert.requirements_txt._whitelist import LocalWhitelist
+from crunch_convert import RequirementLanguage
+from crunch_convert.notebook import ImportedRequirement
+from crunch_convert.requirements_txt import (LocalWhitelist, NamedRequirement,
+                                             format_files_from_imported,
+                                             format_files_from_named)
+from crunch_convert.requirements_txt._formatter import format_line
 
 from ._libraries import os_library, pandas_library, sklearn_library
 

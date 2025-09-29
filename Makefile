@@ -8,7 +8,7 @@ uninstall:
 	$(PIP) uninstall crunch-convert
 
 test:
-	$(PYTHON) -m pytest -v
+	$(PYTHON) -m pytest -vv
 
 test-with-coverage:
 	$(PYTHON) -m pytest --cov=crunch_convert --cov-report=html -vv

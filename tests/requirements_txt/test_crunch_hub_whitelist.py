@@ -1,10 +1,14 @@
 import pytest
 
-from crunch_convert._model import RequirementLanguage
-from crunch_convert.requirements_txt._whitelist import (
+from crunch_convert import RequirementLanguage
+from crunch_convert.requirements_txt import (
     CrunchHubWhitelist, MultipleLibraryAliasCandidateException)
 
-whitelist = CrunchHubWhitelist()
+from ._env import api_base_url
+
+whitelist = CrunchHubWhitelist(
+    api_base_url=api_base_url,
+)
 
 
 def test_find_by_alias():
