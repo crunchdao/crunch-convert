@@ -72,7 +72,7 @@ for embedded_file in flatten.embedded_files:
 <summary>Show a programmatic way</summary>
 
 ```python
-from crunch_convert._model import RequirementLanguage
+from crunch_convert import RequirementLanguage
 from crunch_convert.requirements_txt import CrunchHubVersionFinder, CrunchHubWhitelist, format_files_from_named, freeze, parse_from_file
 
 whitelist = CrunchHubWhitelist()
