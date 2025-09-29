@@ -13,9 +13,10 @@ import yaml
 
 import requirements
 from crunch_convert._model import RequirementLanguage
-from crunch_convert.notebook._model import (EmbeddedFile, ImportedRequirement)
+from crunch_convert.notebook._model import EmbeddedFile, ImportedRequirement
 from crunch_convert.notebook._r import is_r_import
-from crunch_convert.notebook._utils import cut_crlf, strip_hashes
+from crunch_convert.notebook._utils import (cut_crlf, format_requirement_line,
+                                            strip_hashes)
 
 _FAKE_PACKAGE_NAME = "x__fake_package_name__"
 _PACKAGE_NAME_PATTERN = r"[a-zA-Z_][a-zA-Z0-9_-]*[a-zA-Z0-9]"
@@ -77,6 +78,9 @@ class ImportInfo(NamedTuple):
     name: Optional[str]
     extras: List[str]
     specs: List[str]
+
+    def __str__(self) -> str:
+        return format_requirement_line(self.name or "", self.extras, self.specs)
 
 
 class InconsistantLibraryVersionError(ConverterError):

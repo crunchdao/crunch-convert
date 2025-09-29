@@ -3,6 +3,7 @@ from typing import DefaultDict, Dict, List, Optional, Union, cast
 
 from crunch_convert._model import RequirementLanguage
 from crunch_convert.notebook._model import ImportedRequirement
+from crunch_convert.notebook._utils import format_requirement_line
 from crunch_convert.requirements_txt._model import NamedRequirement
 from crunch_convert.requirements_txt._whitelist import Library, Whitelist
 
@@ -128,13 +129,7 @@ def format_line(
     extras: List[str],
     specs: List[str],
 ) -> str:
-    line = name
-
-    if extras:
-        line += f"[{','.join(extras)}]"
-
-    if specs:
-        line += f"{','.join(specs)}"
+    line = format_requirement_line(name, extras, specs)
 
     if alias and name != alias:
         line += f"  # alias of {alias}"
