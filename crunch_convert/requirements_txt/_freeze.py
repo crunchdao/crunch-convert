@@ -9,7 +9,7 @@ from crunch_convert.requirements_txt._whitelist import Whitelist
 
 
 @overload
-def freeze_if_required(
+def freeze(
     requirements: List[NamedRequirement],
     *,
     freeze_only_if_required: Literal[True] = True,
@@ -20,7 +20,7 @@ def freeze_if_required(
 
 
 @overload
-def freeze_if_required(
+def freeze(
     requirements: List[NamedRequirement],
     *,
     freeze_only_if_required: Literal[False] = False,
@@ -29,7 +29,7 @@ def freeze_if_required(
     ...  # pragma: no cover
 
 
-def freeze_if_required(
+def freeze(
     requirements: List[NamedRequirement],
     *,
     version_finder: "VersionFinder",

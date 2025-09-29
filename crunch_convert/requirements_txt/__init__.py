@@ -9,10 +9,11 @@ from crunch_convert.requirements_txt._freeze import \
     LocalSitePackageVersionFinder as LocalSitePackageVersionFinder
 from crunch_convert.requirements_txt._freeze import \
     VersionFinder as VersionFinder
-from crunch_convert.requirements_txt._freeze import \
-    freeze_if_required as freeze_if_required
+from crunch_convert.requirements_txt._freeze import freeze as freeze
 from crunch_convert.requirements_txt._model import \
     NamedRequirement as NamedRequirement
+from crunch_convert.requirements_txt._parse import \
+    parse_from_file as parse_from_file
 from crunch_convert.requirements_txt._whitelist import \
     CachedWhitelist as CachedWhitelist
 from crunch_convert.requirements_txt._whitelist import \
