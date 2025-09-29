@@ -8,6 +8,7 @@ This Python library is designed for the [CrunchDAO Platform](https://hub.crunchd
 - [Installation](#installation)
 - [Usage](#usage)
   - [Convert a Notebook](#convert-a-notebook)
+  - [Freeze Requirements](#freeze-requirements)
 - [Features](#features)
   - [Automatic line commenting](#automatic-line-commenting)
   - [Specifying package versions](#specifying-package-versions)
@@ -29,8 +30,11 @@ pip install --upgrade crunch-convert
 ## Convert a Notebook
 
 ```bash
-crunch-convert notebook ./my-notebook.ipynb --write-requirements.txt
+crunch-convert notebook ./my-notebook.ipynb --write-requirements --write-embedded-files
 ```
+
+<details>
+<summary>Show a programmatic way</summary>
 
 ```python
 from crunch_convert.notebook import extract_from_file
@@ -60,6 +64,57 @@ for embedded_file in flatten.embedded_files:
   with open(embedded_file.normalized_path, "w") as fd:
     fd.write(embedded_file.content)
 ```
+</details>
+
+## Freeze Requirements
+
+<details>
+<summary>Show a programmatic way</summary>
+
+```python
+from crunch_convert._model import RequirementLanguage
+from crunch_convert.requirements_txt import CrunchHubVersionFinder, CrunchHubWhitelist, format_files_from_named, freeze, parse_from_file
+
+whitelist = CrunchHubWhitelist()
+version_finder = CrunchHubVersionFinder()
+
+# Open the requirements.txt to freeze
+with open("requirements.txt", "r") as fd:
+    content = fd.read()
+
+# Parse it into NamedRequirement
+requirements = parse_from_file(
+    language=RequirementLanguage.PYTHON,
+    file_content=content
+)
+
+# Freeze them
+frozen_requirements = freeze(
+    requirements=requirements,
+
+    # Only freeze if required by the whitelist
+    freeze_only_if_required=True,
+    whitelist=whitelist,
+
+    version_finder=version_finder,
+)
+
+# Format the new requirements.txt using now frozen requirements
+frozen_requirements_files = format_files_from_named(
+    frozen_requirements,
+    header="frozen from registry",
+    whitelist=whitelist,
+)
+
+# Write to the new file
+with open("requirements.frozen.txt", "w") as fd:
+    content = frozen_requirements_files[RequirementLanguage.PYTHON]
+    fd.write(content)
+```
+</details>
+
+> [!TIP]
+> The output of `format_files_from_imported()` can be re-parsed right after, no need to first store it in a file.
 
 # Features
 
