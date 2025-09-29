@@ -13,7 +13,7 @@ from crunch_convert.notebook._utils import print_indented
 @click.group()
 @click.version_option(__version__, package_name="__version__.__title__")
 def cli():
-    pass
+    pass  # pragma: no cover
 
 
 @cli.command(help="Convert a notebook to a python script.")

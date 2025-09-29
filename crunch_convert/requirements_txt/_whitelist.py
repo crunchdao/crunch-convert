@@ -35,7 +35,7 @@ class Whitelist(ABC):
         language: RequirementLanguage = RequirementLanguage.PYTHON,
         name: str,
     ) -> Optional[Library]:
-        ...
+        ...  # pragma: no cover
 
     @overload
     def find_library(
@@ -44,7 +44,7 @@ class Whitelist(ABC):
         language: RequirementLanguage = RequirementLanguage.PYTHON,
         alias: str,
     ) -> Optional[Library]:
-        ...
+        ...  # pragma: no cover
 
     @abstractmethod
     def find_library(
@@ -54,7 +54,7 @@ class Whitelist(ABC):
         name: Optional[str] = None,
         alias: Optional[str] = None,
     ) -> Optional[Library]:
-        pass
+        pass  # pragma: no cover
 
 
 CacheCompositeKey = Tuple[RequirementLanguage, str]
@@ -101,7 +101,7 @@ class CachedWhitelist(Whitelist):
             )
 
         else:
-            raise UnsupportedOperation("find_library() must be called with either 'name' or 'alias'.")
+            raise UnsupportedOperation("find_library() must be called with either 'name' or 'alias'.")  # pragma: no cover
 
         self._store_in_cache(library)
         return library
@@ -239,4 +239,4 @@ class LocalWhitelist(Whitelist):
             return libraries[0]
 
         else:
-            raise UnsupportedOperation("find_library() must be called with either 'name' or 'alias'.")
+            raise UnsupportedOperation("find_library() must be called with either 'name' or 'alias'.")  # pragma: no cover
