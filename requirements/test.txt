@@ -1,3 +1,4 @@
+pandas
 parameterized
 pytest
 pytest-cov
