@@ -12,7 +12,7 @@ from crunch_convert.requirements_txt._whitelist import Whitelist
 def freeze(
     requirements: List[NamedRequirement],
     *,
-    freeze_only_if_required: Literal[True] = True,
+    freeze_only_if_required: Literal[True],
     whitelist: Whitelist,
     version_finder: "VersionFinder",
 ) -> List[NamedRequirement]:
@@ -23,7 +23,7 @@ def freeze(
 def freeze(
     requirements: List[NamedRequirement],
     *,
-    freeze_only_if_required: Literal[False] = False,
+    freeze_only_if_required: Literal[False],
     version_finder: "VersionFinder",
 ) -> List[NamedRequirement]:
     ...  # pragma: no cover
@@ -32,9 +32,9 @@ def freeze(
 def freeze(
     requirements: List[NamedRequirement],
     *,
-    version_finder: "VersionFinder",
+    freeze_only_if_required: bool,
     whitelist: Optional[Whitelist] = None,
-    freeze_only_if_required: bool = True,
+    version_finder: "VersionFinder",
 ) -> List[NamedRequirement]:
     frozen_requirements: List[NamedRequirement] = []
 
