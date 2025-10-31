@@ -146,8 +146,7 @@ class LocalSitePackageVersionFinder(VersionFinder):
         if language != RequirementLanguage.PYTHON:
             return None
 
-        from importlib.metadata import (PackageNotFoundError,  # late import
-                                        distribution)
+        from importlib.metadata import PackageNotFoundError, distribution  # late import
 
         try:
             return distribution(name).version

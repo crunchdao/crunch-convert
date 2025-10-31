@@ -1,9 +1,7 @@
 import pandas
 import pytest
 
-from crunch_convert.requirements_txt import (LocalSitePackageVersionFinder,
-                                             LocalWhitelist, NamedRequirement,
-                                             freeze)
+from crunch_convert.requirements_txt import LocalSitePackageVersionFinder, LocalWhitelist, NamedRequirement, freeze
 
 from ._libraries import os_library, pandas_library, pytest_library
 

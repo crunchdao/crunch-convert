@@ -1,7 +1,6 @@
 import pytest
 
-from crunch_convert.notebook import (EmbeddedFile, NotebookCellParseError,
-                                     extract_from_cells)
+from crunch_convert.notebook import EmbeddedFile, NotebookCellParseError, extract_from_cells
 
 from ._shared import cell
 

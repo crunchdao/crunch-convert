@@ -22,6 +22,6 @@ class RequirementLanguage(Enum):
         txt_file_name: str,
         original_txt_file_name: str,
     ):
-        value; # type: ignore
+        value  # type: ignore
         self.txt_file_name = txt_file_name
         self.original_txt_file_name = original_txt_file_name

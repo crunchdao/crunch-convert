@@ -1,4 +1,5 @@
 import re
+
 import requests
 
 from crunch_convert import RequirementLanguage
@@ -27,7 +28,7 @@ def test_python():
         language=RequirementLanguage.PYTHON,
         name=name,
     )
-    
+
     def find_lastest_version_from_pypi(package_name: str) -> str:
         response = requests.get(f"https://pypi.org/pypi/{package_name}/json")
         response.raise_for_status()
@@ -45,7 +46,7 @@ def test_r():
         language=RequirementLanguage.R,
         name=name,
     )
-    
+
     def find_lastest_version_from_cran(package_name: str) -> str:
         response = requests.get(f"https://cloud.r-project.org/web/packages/{package_name}/")
         response.raise_for_status()

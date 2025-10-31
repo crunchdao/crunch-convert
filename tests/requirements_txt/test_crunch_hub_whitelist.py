@@ -1,8 +1,7 @@
 import pytest
 
 from crunch_convert import RequirementLanguage
-from crunch_convert.requirements_txt import (
-    CrunchHubWhitelist, MultipleLibraryAliasCandidateException)
+from crunch_convert.requirements_txt import CrunchHubWhitelist, MultipleLibraryAliasCandidateException
 
 from ._env import api_base_url
 

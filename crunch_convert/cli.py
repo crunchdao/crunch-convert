@@ -6,15 +6,9 @@ import click
 
 from crunch_convert.__version__ import __version__
 from crunch_convert._utils import MockedWriteTextIO
-from crunch_convert.notebook import (ConverterError,
-                                     InconsistantLibraryVersionError,
-                                     NotebookCellParseError, extract_from_file)
+from crunch_convert.notebook import ConverterError, InconsistantLibraryVersionError, NotebookCellParseError, extract_from_file
 from crunch_convert.notebook._utils import print_indented
-from crunch_convert.requirements_txt import (CrunchHubWhitelist,
-                                             LocalSitePackageVersionFinder,
-                                             format_files_from_imported,
-                                             format_files_from_named, freeze,
-                                             parse_from_file)
+from crunch_convert.requirements_txt import CrunchHubWhitelist, LocalSitePackageVersionFinder, format_files_from_imported, format_files_from_named, freeze, parse_from_file
 
 
 @click.group()

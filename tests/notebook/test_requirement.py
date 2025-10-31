@@ -1,7 +1,6 @@
 import pytest
 
-from crunch_convert.notebook import (ImportedRequirement,
-                                     ImportedRequirementLanguage)
+from crunch_convert.notebook import ImportedRequirement, ImportedRequirementLanguage
 
 
 def test_merge_nothing():
