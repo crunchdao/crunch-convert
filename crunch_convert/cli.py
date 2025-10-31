@@ -125,7 +125,7 @@ def _open_with_consent(override: bool, file_path: str) -> TextIO:
             default=True,
         )
 
-    if override:
-        return open(file_path, "w")
+        if not override:
+            return cast(TextIO, MockedWriteTextIO())
 
-    return cast(TextIO, MockedWriteTextIO())
+    return open(file_path, "w")
