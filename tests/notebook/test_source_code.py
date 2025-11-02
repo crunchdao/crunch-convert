@@ -3,7 +3,7 @@ import textwrap
 import pytest
 from parameterized import parameterized  # type: ignore
 
-from crunch_convert.notebook import NotebookCellParseError, extract_from_cells
+from crunch_convert.notebook import BadCellHandling, NotebookCellParseError, extract_from_cells
 
 from ._shared import cell
 
@@ -58,13 +58,45 @@ def test_ignore_error():
                 "x = 2",
             ])
         ],
-        ignore_bad_cells=True,
+        bad_cell_handling=BadCellHandling.IGNORE,
     )
 
     content = textwrap.dedent("""
         def a(): ...
         
         
+        #x = 2
+    """).lstrip()
+
+    assert content == flatten.source_code
+
+
+def test_comment_error():
+    flatten = extract_from_cells(
+        [
+            cell("a", "code", [
+                "def a(): ...",
+            ]),
+            cell("b", "code", [
+                "defhello(x):",
+                "    return x + 1",
+            ]),
+            cell("c", "code", [
+                "x = 2",
+            ])
+        ],
+        bad_cell_handling=BadCellHandling.COMMENT,
+    )
+
+    content = textwrap.dedent("""
+        def a(): ...
+
+
+        # bad cell: parser error: error at 1:12: expected one of !=, %, &, (, *, **, +, ,, -, ., /, //, ;, <, <<, <=, ==, >, >=, >>, @, NEWLINE, [, ^, and, if, in, is, not, or, |
+        #defhello(x):
+        #    return x + 1
+
+
         #x = 2
     """).lstrip()
 

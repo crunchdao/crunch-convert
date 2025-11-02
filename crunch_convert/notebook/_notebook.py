@@ -5,6 +5,7 @@ import py_compile
 import re
 from collections import defaultdict
 from dataclasses import dataclass
+from enum import Enum
 from typing import Any, Callable, DefaultDict, Dict, List, Match, NamedTuple, Optional, Set, Tuple, Union, cast
 
 import libcst
@@ -32,6 +33,12 @@ _EMPTY_EXTRAS_AND_SPECS: Tuple[List[str], List[str]] = ([], [])
 
 
 LogFunction = Callable[[str], None]
+
+
+class BadCellHandling(Enum):
+    RAISE = "raise"
+    IGNORE = "ignore"
+    COMMENT = "comment"
 
 
 def strip_packages(name: str):
@@ -393,7 +400,7 @@ def _jupyter_replacer(match: Match[str]) -> str:
 def _extract_code_cell(
     *,
     cell_source: List[str],
-    ignore_bad_cells: bool,
+    bad_cell_handling: BadCellHandling,
     log: LogFunction,
     module: List[str],
     imported_requirements: DefaultDict[RequirementLanguage, Dict[str, ImportedRequirement]],
@@ -412,8 +419,18 @@ def _extract_code_cell(
     except libcst.ParserSyntaxError as error:
         log(f"failed to parse: {error.message}")
 
-        if ignore_bad_cells:
+        if BadCellHandling.IGNORE == bad_cell_handling:
             log(f"skipped")
+            return
+
+        elif BadCellHandling.COMMENT == bad_cell_handling:
+            log(f"commented out")
+
+            if len(module):
+                module.append(f"\n")
+
+            module.append(f"# bad cell: {error.message}")
+            module.append(re.sub("^", "#", source, flags=re.MULTILINE))
             return
 
         raise NotebookCellParseError(
@@ -576,7 +593,7 @@ def extract_from_cells(
     *,
     print: Optional[LogFunction] = print,
     validate: bool = True,
-    ignore_bad_cells: bool = False,
+    bad_cell_handling: BadCellHandling = BadCellHandling.RAISE,
 ) -> FlattenNotebook:
     if print is None:
         def print(_): return None
@@ -605,7 +622,7 @@ def extract_from_cells(
             if cell_type == "code":
                 _extract_code_cell(
                     cell_source=cell_source,
-                    ignore_bad_cells=ignore_bad_cells,
+                    bad_cell_handling=bad_cell_handling,
                     log=log,
                     module=module,
                     imported_requirements=imported_requirements,

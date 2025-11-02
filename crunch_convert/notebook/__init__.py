@@ -1,6 +1,7 @@
 from crunch_convert._model import RequirementLanguage as RequirementLanguage
 from crunch_convert.notebook._model import EmbeddedFile as EmbeddedFile
 from crunch_convert.notebook._model import ImportedRequirement as ImportedRequirement
+from crunch_convert.notebook._notebook import BadCellHandling as BadCellHandling
 from crunch_convert.notebook._notebook import ConverterError as ConverterError
 from crunch_convert.notebook._notebook import FlattenNotebook as FlattenNotebook
 from crunch_convert.notebook._notebook import InconsistantLibraryVersionError as InconsistantLibraryVersionError
