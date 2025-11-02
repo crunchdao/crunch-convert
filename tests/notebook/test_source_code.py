@@ -44,6 +44,33 @@ def test_normal():
     assert content == flatten.source_code
 
 
+def test_ignore_error():
+    flatten = extract_from_cells(
+        [
+            cell("a", "code", [
+                "def a(): ...",
+            ]),
+            cell("b", "code", [
+                "defhello(x):",
+                "    return x + 1",
+            ]),
+            cell("c", "code", [
+                "x = 2",
+            ])
+        ],
+        ignore_bad_cells=True,
+    )
+
+    content = textwrap.dedent("""
+        def a(): ...
+        
+        
+        #x = 2
+    """).lstrip()
+
+    assert content == flatten.source_code
+
+
 def test_keep_commands():
     flatten = extract_from_cells([
         cell("a", "code", [

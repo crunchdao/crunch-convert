@@ -391,7 +391,9 @@ def _jupyter_replacer(match: Match[str]) -> str:
 
 
 def _extract_code_cell(
+    *,
     cell_source: List[str],
+    ignore_bad_cells: bool,
     log: LogFunction,
     module: List[str],
     imported_requirements: DefaultDict[RequirementLanguage, Dict[str, ImportedRequirement]],
@@ -409,6 +411,10 @@ def _extract_code_cell(
         tree = libcst.parse_module(source)
     except libcst.ParserSyntaxError as error:
         log(f"failed to parse: {error.message}")
+
+        if ignore_bad_cells:
+            log(f"skipped")
+            return
 
         raise NotebookCellParseError(
             f"notebook code cell cannot be parsed",
@@ -570,6 +576,7 @@ def extract_from_cells(
     *,
     print: Optional[LogFunction] = print,
     validate: bool = True,
+    ignore_bad_cells: bool = False,
 ) -> FlattenNotebook:
     if print is None:
         def print(_): return None
@@ -596,7 +603,13 @@ def extract_from_cells(
         try:
             cell_type = cell["cell_type"]
             if cell_type == "code":
-                _extract_code_cell(cell_source, log, module, imported_requirements)
+                _extract_code_cell(
+                    cell_source=cell_source,
+                    ignore_bad_cells=ignore_bad_cells,
+                    log=log,
+                    module=module,
+                    imported_requirements=imported_requirements,
+                )
             elif cell_type == "markdown":
                 _extract_markdown_cell(cell_source, log, embed_files)
             else:
