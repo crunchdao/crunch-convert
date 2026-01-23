@@ -115,7 +115,7 @@ def notebook(
     if write_embedded_files:
         for embedded_file in flatten.embedded_files:
             with _open_with_consent(override, embedded_file.normalized_path) as fd:
-                fd.write(flatten.source_code)
+                fd.write(embedded_file.content)
 
 
 def _open_with_consent(override: bool, file_path: str) -> TextIO:
