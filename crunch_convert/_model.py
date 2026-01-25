@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from enum import Enum
 from typing import Any, cast
 
@@ -25,3 +26,33 @@ class RequirementLanguage(Enum):
         value  # type: ignore
         self.txt_file_name = txt_file_name
         self.original_txt_file_name = original_txt_file_name
+
+
+class WarningCategory(Enum):
+    NESTED_IMPORT = "NESTED_IMPORT"
+
+    @property
+    def lower(self):
+        return self.name.replace("_", " ").lower()
+
+
+@dataclass(frozen=True)
+class WarningLocation:
+    file: str
+    #: Line numbers are 1-indexed.
+    line: int
+    #: Column numbers are 0-indexed.
+    column: int
+
+    def __str__(self):
+        return f"{self.file}: line {self.line}: column {self.column}"
+
+
+@dataclass(frozen=True)
+class Warning:
+    category: WarningCategory
+    message: str
+    location: WarningLocation
+
+    def __str__(self):
+        return f"{self.location}: {self.category.lower}: {self.message}"

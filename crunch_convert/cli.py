@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 from typing import Optional, TextIO, cast
 
 import click
@@ -62,6 +63,9 @@ def notebook(
             print(f"  other version: {error.new}")
 
         raise click.Abort()
+
+    for warning in flatten.warnings:
+        print(f"warning {warning}", file=sys.stderr)
 
     with _open_with_consent(override, python_file_path) as fd:
         fd.write(flatten.source_code)

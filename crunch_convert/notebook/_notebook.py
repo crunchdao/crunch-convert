@@ -9,10 +9,11 @@ from enum import Enum
 from typing import Any, Callable, DefaultDict, Dict, List, Match, NamedTuple, Optional, Set, Tuple, Union, cast
 
 import libcst
+import libcst.metadata
 import yaml
 
 import requirements
-from crunch_convert._model import RequirementLanguage
+from crunch_convert._model import RequirementLanguage, Warning, WarningCategory, WarningLocation
 from crunch_convert.notebook._model import EmbeddedFile, ImportedRequirement
 from crunch_convert.notebook._r import is_r_import
 from crunch_convert.notebook._utils import cut_crlf, format_requirement_line, strip_hashes
@@ -271,12 +272,40 @@ class EmptyLine(libcst.EmptyLine):
         super()._codegen_impl(state)  # type: ignore
 
 
+class NestedImportFinder(libcst.CSTVisitor):
+
+    def __init__(self):
+        self.found = 0
+
+    def on_visit(
+        self,
+        node: libcst.CSTNode,
+    ) -> bool:
+        if isinstance(node, _IMPORT):
+            self.found += 1
+
+        return True
+
+    @staticmethod
+    def count(node: libcst.CSTNode):
+        finder = NestedImportFinder()
+        node.visit(finder)
+
+        return finder.found
+
+
 class CommentTransformer(libcst.CSTTransformer):
+    METADATA_DEPENDENCIES = (libcst.metadata.PositionProvider,)
 
     METHOD_GROUP = "group"
     METHOD_LINE = "line"
 
-    def __init__(self, tree: libcst.Module):
+    def __init__(
+        self,
+        cell_id: str,
+        tree: libcst.Module,
+    ):
+        self.cell_id = cell_id
         self.tree = tree
 
         self.import_and_comment_nodes: List[Tuple[ImportNodeType, Optional[libcst.Comment]]] = []
@@ -285,6 +314,8 @@ class CommentTransformer(libcst.CSTTransformer):
         self._method_stack: List[str] = []
         self._previous_import_node: Optional[ImportNodeType] = None
         self._auto_comment = True
+
+        self.warnings: List[Warning] = []
 
     def on_visit(
         self,
@@ -295,9 +326,26 @@ class CommentTransformer(libcst.CSTTransformer):
         if isinstance(node, (libcst.Module, libcst.SimpleStatementLine)):
             self._method_stack.append(self.METHOD_GROUP)
             return True
+
         elif isinstance(node, libcst.BaseCompoundStatement):
+            found_imports = NestedImportFinder.count(node)
+            if found_imports:
+                position = self.get_metadata(libcst.metadata.PositionProvider, node).start  # type: ignore
+                assert isinstance(position, libcst.metadata.CodePosition)
+
+                self.warnings.append(Warning(
+                    category=WarningCategory.NESTED_IMPORT,
+                    message=f"found {found_imports} nested import{'s' if found_imports > 1 else ''} in {node.__class__.__name__} statement",
+                    location=WarningLocation(
+                        file=self.cell_id,
+                        line=position.line,
+                        column=position.column,
+                    ),
+                ))
+
             self._method_stack.append(self.METHOD_GROUP)
             return False
+
         else:
             self._method_stack.append(self.METHOD_LINE)
             return False
@@ -399,10 +447,12 @@ def _jupyter_replacer(match: Match[str]) -> str:
 
 def _extract_code_cell(
     *,
+    cell_id: str,
     cell_source: List[str],
     bad_cell_handling: BadCellHandling,
     log: LogFunction,
     module: List[str],
+    warnings: List[Warning],
     imported_requirements: DefaultDict[RequirementLanguage, Dict[str, ImportedRequirement]],
 ):
     source = "\n".join(
@@ -439,8 +489,10 @@ def _extract_code_cell(
             source,
         ) from error
 
-    transformer = CommentTransformer(tree)
-    tree = tree.visit(transformer)
+    transformer = CommentTransformer(cell_id, tree)
+    tree = libcst.metadata.MetadataWrapper(tree).visit(transformer)
+
+    warnings.extend(transformer.warnings)
 
     for import_node, comment_node in transformer.import_and_comment_nodes:
         new_requirements = _convert_python_import(log, import_node, comment_node)
@@ -586,12 +638,13 @@ class FlattenNotebook:
     source_code: str
     embedded_files: List[EmbeddedFile]
     requirements: List["ImportedRequirement"]
+    warnings: List[Warning]
 
 
 def extract_from_cells(
     cells: List[Any],
     *,
-    print: Optional[LogFunction] = print,
+    print: Optional[LogFunction] = print,  # pyright: ignore[reportRedeclaration]
     validate: bool = True,
     bad_cell_handling: BadCellHandling = BadCellHandling.RAISE,
 ) -> FlattenNotebook:
@@ -601,6 +654,7 @@ def extract_from_cells(
     imported_requirements: DefaultDict[RequirementLanguage, Dict[str, ImportedRequirement]] = defaultdict(dict)
     module: List[str] = []
     embed_files: Dict[str, EmbeddedFile] = {}
+    warnings: List[Warning] = []
 
     for index, cell in enumerate(cells):
         cell_id = cell["metadata"].get("id") or f"cell_{index}"
@@ -621,10 +675,12 @@ def extract_from_cells(
             cell_type = cell["cell_type"]
             if cell_type == "code":
                 _extract_code_cell(
+                    cell_id=cell_id,
                     cell_source=cell_source,
                     bad_cell_handling=bad_cell_handling,
                     log=log,
                     module=module,
+                    warnings=warnings,
                     imported_requirements=imported_requirements,
                 )
             elif cell_type == "markdown":
@@ -651,6 +707,7 @@ def extract_from_cells(
             for requirements in imported_requirements.values()
             for requirement in list(requirements.values())
         ],
+        warnings=warnings,
     )
 
 

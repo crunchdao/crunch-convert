@@ -3,6 +3,7 @@ import textwrap
 import pytest
 from parameterized import parameterized  # type: ignore
 
+from crunch_convert import Warning, WarningCategory, WarningLocation
 from crunch_convert.notebook import BadCellHandling, NotebookCellParseError, extract_from_cells
 
 from ._shared import cell
@@ -42,6 +43,66 @@ def test_normal():
     """).lstrip()
 
     assert content == flatten.source_code
+
+
+def test_warning():
+    flatten = extract_from_cells([
+        cell("a", "code", [
+            "# Hello World",
+        ]),
+        cell("b", "code", [
+            "try:",
+            "    import a",
+            "except:",
+            "    import b",
+        ]),
+        cell("c", "code", [
+            "if True:",
+            "    import c",
+            "else:",
+            "    import d",
+            "    import e",
+        ])
+    ])
+
+    content = textwrap.dedent("""
+        # Hello World
+        
+        
+        #try:
+        #    import a
+        #except:
+        #    import b
+        
+        
+        #if True:
+        #    import c
+        #else:
+        #    import d
+        #    import e
+    """).lstrip()
+
+    assert content == flatten.source_code
+
+    assert 2 == len(flatten.warnings)
+    assert flatten.warnings[0] == Warning(
+        category=WarningCategory.NESTED_IMPORT,
+        message="found 2 nested imports in Try statement",
+        location=WarningLocation(
+            file="b",
+            line=1,
+            column=0,
+        ),
+    )
+    assert flatten.warnings[1] == Warning(
+        category=WarningCategory.NESTED_IMPORT,
+        message="found 3 nested imports in If statement",
+        location=WarningLocation(
+            file="c",
+            line=1,
+            column=0,
+        ),
+    )
 
 
 def test_ignore_error():
