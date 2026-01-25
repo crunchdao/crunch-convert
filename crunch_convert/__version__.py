@@ -1,6 +1,6 @@
 __title__ = 'crunch-convert'
 __description__ = 'crunch-convert - Conversion module for the CrunchDAO Platform'
-__version__ = '0.4.1'
+__version__ = '0.5.0'
 __author__ = 'Enzo CACERES'
 __author_email__ = 'enzo.caceres@crunchdao.com'
 __url__ = 'https://github.com/crunchdao/crunch-convert'
