@@ -68,6 +68,10 @@ for embedded_file in flatten.embedded_files:
 
 ## Freeze Requirements
 
+```bash
+crunch-convert requirements-txt freeze requirements.user.txt
+```
+
 <details>
 <summary>Show a programmatic way</summary>
 
@@ -111,10 +115,11 @@ with open("requirements.frozen.txt", "w") as fd:
     content = frozen_requirements_files[RequirementLanguage.PYTHON]
     fd.write(content)
 ```
-</details>
 
 > [!TIP]
 > The output of `format_files_from_imported()` can be re-parsed right after, no need to first store it in a file.
+
+</details>
 
 # Features
 

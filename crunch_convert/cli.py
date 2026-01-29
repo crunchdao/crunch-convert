@@ -6,10 +6,11 @@ from typing import Optional, TextIO, cast
 import click
 
 from crunch_convert.__version__ import __version__
+from crunch_convert._model import RequirementLanguage
 from crunch_convert._utils import MockedWriteTextIO
 from crunch_convert.notebook import ConverterError, InconsistantLibraryVersionError, NotebookCellParseError, extract_from_file
 from crunch_convert.notebook._utils import print_indented
-from crunch_convert.requirements_txt import CrunchHubWhitelist, LocalSitePackageVersionFinder, format_files_from_imported, format_files_from_named, freeze, parse_from_file
+from crunch_convert.requirements_txt import CachedWhitelist, CrunchHubWhitelist, LocalSitePackageVersionFinder, format_files_from_imported, format_files_from_named, freeze, parse_from_file
 
 
 @click.group()
@@ -120,6 +121,85 @@ def notebook(
         for embedded_file in flatten.embedded_files:
             with _open_with_consent(override, embedded_file.normalized_path) as fd:
                 fd.write(embedded_file.content)
+
+
+@cli.group()
+def requirements_txt():
+    pass  # pragma: no cover
+
+
+@requirements_txt.command(name="freeze", help="Freeze a requirements.txt file.")
+@click.option("--override", is_flag=True, help="Force overwrite of the python file.")
+@click.option("--only-if-required", is_flag=True, help="Only freeze if required by the whitelist.")
+@click.option("--language", "language_name", type=click.Choice([RequirementLanguage.PYTHON.name, RequirementLanguage.R.name], case_sensitive=False), default=RequirementLanguage.PYTHON.name, help="Language of the requirements.txt file.")
+@click.argument("requirements-txt-file-path", type=click.Path(readable=True, dir_okay=False), required=False)
+def freeze_command(
+    override: bool,
+    only_if_required: bool,
+    language_name: str,
+    requirements_txt_file_path: Optional[str],
+):
+    if requirements_txt_file_path == RequirementLanguage.PYTHON.txt_file_name:
+        override = True
+
+    language = RequirementLanguage[language_name.upper()]
+
+    if requirements_txt_file_path is None:
+        requirements_txt_file_path = language.txt_file_name
+
+    with open(requirements_txt_file_path) as fd:
+        content = fd.read()
+
+    requirements = parse_from_file(
+        language=language,
+        file_content=content,
+    )
+
+    whitelist = CachedWhitelist(CrunchHubWhitelist())
+    version_finder = LocalSitePackageVersionFinder()
+
+    for requirement in requirements:
+        library = whitelist.find_library(
+            language=language,
+            name=requirement.name,
+        )
+
+        if library is None:
+            print(f"not whitelisted: {requirement.name}")
+
+    requirements_files = format_files_from_named(
+        requirements,
+        header="extracted from a file",
+        whitelist=whitelist,
+    )
+
+    if only_if_required:
+        frozen_requirements = freeze(
+            requirements=requirements,
+            freeze_only_if_required=True,
+            whitelist=whitelist,
+            version_finder=version_finder,
+        )
+    else:
+        frozen_requirements = freeze(
+            requirements=requirements,
+            freeze_only_if_required=False,
+            version_finder=version_finder,
+        )
+
+    frozen_requirements_files = format_files_from_named(
+        frozen_requirements,
+        header="frozen from registry",
+        whitelist=whitelist,
+    )
+
+    with _open_with_consent(override, language.original_txt_file_name) as fd:
+        content = requirements_files[language]
+        fd.write(content)
+
+    with _open_with_consent(override, language.txt_file_name) as fd:
+        content = frozen_requirements_files[language]
+        fd.write(content)
 
 
 def _open_with_consent(override: bool, file_path: str) -> TextIO:
