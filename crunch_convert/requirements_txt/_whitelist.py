@@ -1,3 +1,4 @@
+import warnings
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass
@@ -21,9 +22,19 @@ class MultipleLibraryAliasCandidateException(Exception):
 class Library:
     language: RequirementLanguage
     name: str
-    alias: Optional[str]
+    aliases: List[str]
     standard: bool
     freeze: bool
+
+    @property
+    def alias(self):
+        warnings.warn(
+            "alias is deprecated and will be removed in a future version. Use aliases instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
+        return self.aliases[0] if len(self.aliases) else None
 
 
 class Whitelist(ABC):
@@ -115,8 +126,7 @@ class CachedWhitelist(Whitelist):
 
         self._name_cache[(library.language, library.name)] = library
 
-        alias = library.alias
-        if alias is not None:
+        for alias in library.aliases:
             self._alias_cache[(library.language, alias)] = library
 
 
@@ -163,7 +173,7 @@ class CrunchHubWhitelist(Whitelist):
             if name is not None and name == library.name:
                 return library
 
-            elif alias is not None and alias == library.alias:
+            elif alias is not None and alias in library.aliases:
                 alias_conflicting_names.add(library.name)
 
             else:
@@ -181,13 +191,10 @@ class CrunchHubWhitelist(Whitelist):
         self,
         item: Dict[str, Any],
     ) -> Library:
-        aliases = item.get("aliases")
-        alias = aliases[0] if aliases else None
-
         return Library(
             language=RequirementLanguage(item["language"]),
             name=item["name"],
-            alias=alias,
+            aliases=item["aliases"],
             standard=item["standard"],
             freeze=item["freeze"],
         )
@@ -207,8 +214,8 @@ class LocalWhitelist(Whitelist):
         for library in libraries:
             self._library_by_name[(library.language, library.name)] = library
 
-            if library.alias is not None:
-                self._libraries_by_alias[(library.language, library.alias)].append(library)
+            for alias in library.aliases:
+                self._libraries_by_alias[(library.language, alias)].append(library)
 
     def find_library(
         self,

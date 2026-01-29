@@ -3,7 +3,7 @@ from crunch_convert.requirements_txt import Library
 
 pytest_library = Library(
     name="pytest",
-    alias="pytest",
+    aliases=["pytest"],
     language=RequirementLanguage.PYTHON,
     standard=False,
     freeze=False,
@@ -11,7 +11,7 @@ pytest_library = Library(
 
 sklearn_library = Library(
     name="scikit-learn",
-    alias="sklearn",
+    aliases=["sklearn"],
     language=RequirementLanguage.PYTHON,
     standard=False,
     freeze=True,
@@ -19,7 +19,7 @@ sklearn_library = Library(
 
 pandas_library = Library(
     name="pandas",
-    alias="pandas",
+    aliases=["pandas"],
     language=RequirementLanguage.PYTHON,
     standard=False,
     freeze=True,
@@ -27,7 +27,7 @@ pandas_library = Library(
 
 pandas_in_r_library = Library(
     name="pandas",
-    alias="pandas",
+    aliases=["pandas"],
     language=RequirementLanguage.R,
     standard=False,
     freeze=True,
@@ -35,7 +35,7 @@ pandas_in_r_library = Library(
 
 emd_signal_library = Library(
     name="EMD-signal",
-    alias="pyemd",
+    aliases=["pyemd"],
     language=RequirementLanguage.PYTHON,
     standard=False,
     freeze=False,
@@ -43,7 +43,7 @@ emd_signal_library = Library(
 
 pyemd_library = Library(
     name="pyemd",
-    alias="pyemd",
+    aliases=["pyemd"],
     language=RequirementLanguage.PYTHON,
     standard=False,
     freeze=False,
@@ -51,7 +51,7 @@ pyemd_library = Library(
 
 os_library = Library(
     name="os",
-    alias="os",
+    aliases=["os"],
     language=RequirementLanguage.PYTHON,
     standard=True,
     freeze=False,
