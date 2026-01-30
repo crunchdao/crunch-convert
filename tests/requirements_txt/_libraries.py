@@ -35,7 +35,7 @@ pandas_in_r_library = Library(
 
 emd_signal_library = Library(
     name="EMD-signal",
-    aliases=["pyemd"],
+    aliases=["pyemd"],  # should be "PyEMD", but used in the collision test
     language=RequirementLanguage.PYTHON,
     standard=False,
     freeze=False,

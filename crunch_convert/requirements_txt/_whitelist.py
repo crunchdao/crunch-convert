@@ -92,7 +92,7 @@ class CachedWhitelist(Whitelist):
         alias: Optional[str] = None,
     ) -> Optional[Library]:
         if name is not None:
-            cached = self._name_cache.get((language, name))
+            cached = self._name_cache.get((language, name.lower()))
             if cached is not None:
                 return cached
 
@@ -124,7 +124,7 @@ class CachedWhitelist(Whitelist):
         if library is None:
             return
 
-        self._name_cache[(library.language, library.name)] = library
+        self._name_cache[(library.language, library.name.lower())] = library
 
         for alias in library.aliases:
             self._alias_cache[(library.language, alias)] = library
@@ -167,10 +167,13 @@ class CrunchHubWhitelist(Whitelist):
         alias_conflicting_names: Set[str] = set()
         library: Optional[Library] = None
 
+        if name is not None:
+            name = name.lower()  # used for case-insensitive comparison
+
         for item in content:
             library = self._map_library(item)
 
-            if name is not None and name == library.name:
+            if name is not None and name == library.name.lower():
                 return library
 
             elif alias is not None and alias in library.aliases:
@@ -212,7 +215,7 @@ class LocalWhitelist(Whitelist):
         self._libraries_by_alias: Dict[CacheCompositeKey, List[Library]] = defaultdict(list)
 
         for library in libraries:
-            self._library_by_name[(library.language, library.name)] = library
+            self._library_by_name[(library.language, library.name.lower())] = library
 
             for alias in library.aliases:
                 self._libraries_by_alias[(library.language, alias)].append(library)
@@ -225,7 +228,7 @@ class LocalWhitelist(Whitelist):
         alias: Optional[str] = None,
     ) -> Optional[Library]:
         if name is not None:
-            return self._library_by_name.get((language, name))
+            return self._library_by_name.get((language, name.lower()))
 
         elif alias is not None:
             libraries = self._libraries_by_alias.get((language, alias))
