@@ -12,11 +12,17 @@ from crunch_convert.notebook import ConverterError, InconsistantLibraryVersionEr
 from crunch_convert.notebook._utils import print_indented
 from crunch_convert.requirements_txt import CachedWhitelist, CrunchHubWhitelist, LocalSitePackageVersionFinder, format_files_from_imported, format_files_from_named, freeze, parse_from_file
 
+the_crunch_api_base_url: str = None  # type: ignore
+
 
 @click.group()
 @click.version_option(__version__, package_name="__version__.__title__")
-def cli():
-    pass  # pragma: no cover
+@click.option("--crunch-api-base-url", envvar="CRUNCH_BASE_API_URL", default="https://api.hub.crunchdao.com/")
+def cli(
+    crunch_api_base_url: str,
+):
+    global the_crunch_api_base_url
+    the_crunch_api_base_url = crunch_api_base_url
 
 
 @cli.command(help="Convert a notebook to a python script.")
@@ -72,7 +78,7 @@ def notebook(
         fd.write(flatten.source_code)
 
     if write_requirements:
-        whitelist = CrunchHubWhitelist()
+        whitelist = CachedWhitelist(CrunchHubWhitelist(api_base_url=the_crunch_api_base_url))
         version_finder = LocalSitePackageVersionFinder()
 
         requirements_files = format_files_from_imported(
@@ -155,7 +161,7 @@ def freeze_command(
         file_content=content,
     )
 
-    whitelist = CachedWhitelist(CrunchHubWhitelist())
+    whitelist = CachedWhitelist(CrunchHubWhitelist(api_base_url=the_crunch_api_base_url))
     version_finder = LocalSitePackageVersionFinder()
 
     for requirement in requirements:
