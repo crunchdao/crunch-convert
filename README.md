@@ -12,6 +12,11 @@ This Python library is designed for the [CrunchDAO Platform](https://hub.crunchd
 - [Features](#features)
   - [Automatic line commenting](#automatic-line-commenting)
   - [Specifying package versions](#specifying-package-versions)
+    - [Inconsistent versions](#inconsistent-versions)
+    - [Standard libraries](#standard-libraries)
+    - [Optional dependencies](#optional-dependencies)
+    - [Name conflicts](#name-conflicts)
+    - [Ignore an import](#ignore-an-import)
   - [R imports via rpy2](#r-imports-via-rpy2)
   - [Embedded Files](#embedded-files)
 - [Contributing](#contributing)
@@ -183,6 +188,8 @@ import sklearn # ~= 1.4.2
 from requests import Session # == 1.5
 ```
 
+### Inconsistent versions
+
 Specifying multiple times will cause the submission to be rejected if they are different.
 
 ```python
@@ -191,6 +198,8 @@ import pandas # == 1.3
 import pandas # == 1.5
 ```
 
+### Standard libraries
+
 Specifying versions on standard libraries does nothing (but they will still be rejected if there is an inconsistent version).
 
 ```python
@@ -198,6 +207,8 @@ Specifying versions on standard libraries does nothing (but they will still be r
 import os # == 1.3
 import sys # == 1.5
 ```
+
+### Optional dependencies
 
 If an optional dependency is required for the code to work properly, an import statement must be added, even if the code does not use it directly.
 
@@ -208,6 +219,8 @@ import castle.algorithms
 import torch
 ```
 
+### Name conflicts
+
 It is possible for multiple import names to resolve to different libraries on PyPI. If this happens, you must specify which one you want. If you do not want a specific version, you can use `@latest`, as without this, we cannot distinguish between commented code and version specifiers.
 
 ```python
@@ -216,6 +229,15 @@ import pyemd # EMD-signal @latest
 
 # Prefer https://pypi.org/project/pyemd/
 import pyemd # pyemd @latest
+```
+
+### Ignore an import
+
+If you do not want the process to add the package to the `requirements.txt` file, you can use `@ignore` as a version specifier.
+
+```python
+# Ignore pandas, use already installed (if any; else, import error is expected!)
+import pandas # @ignore
 ```
 
 ## R imports via rpy2

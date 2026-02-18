@@ -39,6 +39,20 @@ def test_latest_version():
     ]
 
 
+def test_ignore_version():
+    flatten = extract_from_cells([
+        cell("a", "code", [
+            "import hello # @ignore",
+            "import world # pandas @ignore",
+            "import hello2"
+        ])
+    ])
+
+    assert flatten.requirements == [
+        ImportedRequirement(alias="hello2"),
+    ]
+
+
 def test_inconsistant_version():
     with pytest.raises(InconsistantLibraryVersionError):
         extract_from_cells([

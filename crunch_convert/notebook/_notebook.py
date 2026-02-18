@@ -20,7 +20,8 @@ from crunch_convert.notebook._utils import cut_crlf, format_requirement_line, st
 
 _FAKE_PACKAGE_NAME = "x__fake_package_name__"
 _PACKAGE_NAME_PATTERN = r"[a-zA-Z_][a-zA-Z0-9_-]*[a-zA-Z0-9]"
-_LAST_VERSION = "@latest"
+_LATEST_VERSION = "@latest"
+_IGNORE_VERSION = "@ignore"
 
 _DOT = "."
 _KV_DIVIDER = "---"
@@ -80,6 +81,13 @@ class RequirementVersionParseError(ConverterError):
         super().__init__(message)
 
 
+class _IgnoreImportType:
+    pass
+
+
+_IgnoreImport = _IgnoreImportType()
+
+
 class ImportInfo(NamedTuple):
     name: Optional[str]
     extras: List[str]
@@ -107,7 +115,7 @@ class InconsistantLibraryVersionError(ConverterError):
 def _extract_import_version(
     log: LogFunction,
     comment_node: Optional[libcst.Comment]
-) -> Optional[ImportInfo]:
+) -> Optional[Union[ImportInfo, _IgnoreImportType]]:
     if comment_node is None:
         log(f"skip version: no comment")
         return None
@@ -125,8 +133,12 @@ def _extract_import_version(
     user_package_name = match.group(1)
     test_package_name = user_package_name or _FAKE_PACKAGE_NAME
 
-    version_part: str = line[match.start(2):]
-    if version_part == _LAST_VERSION:
+    version_part = line[match.start(2):].strip()
+
+    if version_part == _IGNORE_VERSION:
+        return _IgnoreImport
+
+    if version_part == _LATEST_VERSION:
         return ImportInfo(user_package_name or None, [], [])
 
     line = f"{test_package_name} {version_part}"
@@ -153,7 +165,7 @@ def _extract_import_version(
         [
             f"{operator}{semver}"
             for operator, semver in requirement.specs
-        ]
+        ],
     )
 
 
@@ -184,14 +196,20 @@ def _convert_python_import(
     else:
         return []
 
+    import_info = _extract_import_version(log, comment_node)
+
+    if import_info is _IgnoreImport:
+        log(f"skip version: ignored by comment")
+        return []
+
+    if import_info is None:
+        import_info = ImportInfo(None, [], [])
+
     (
         package_name,
         extras,
         specs,
-    ) = _extract_import_version(
-        log,
-        comment_node
-    ) or (None, [], [])
+    ) = cast(ImportInfo, import_info)
 
     names: Set[str] = set()
     for path in paths:
@@ -205,7 +223,7 @@ def _convert_python_import(
             name=package_name,
             extras=extras,
             specs=specs,
-            language=RequirementLanguage.PYTHON
+            language=RequirementLanguage.PYTHON,
         )
         for name in names
     ]
