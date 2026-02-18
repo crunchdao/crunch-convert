@@ -11,6 +11,7 @@ This Python library is designed for the [CrunchDAO Platform](https://hub.crunchd
   - [Freeze Requirements](#freeze-requirements)
 - [Features](#features)
   - [Automatic line commenting](#automatic-line-commenting)
+    - [Ignore everything](#ignore-everything)
   - [Specifying package versions](#specifying-package-versions)
     - [Inconsistent versions](#inconsistent-versions)
     - [Standard libraries](#standard-libraries)
@@ -174,6 +175,33 @@ def train(...):
 
 > [!TIP]
 > You can put a `@crunch/keep:on` at the top of the cell and never close it to keep everything.
+
+### Ignore everything
+
+To ignore everything when submitting, use the `@crunch/keep:none` command to exclude even imports, functions, and classes.
+
+```python
+# @crunch/keep:none
+from google.colab import files
+files.download("test.joblib")
+
+def score_local():
+    ...
+```
+
+The result will be:
+
+```python
+# from google.colab import files
+# files.download("test.joblib")
+
+# def score_local():
+#     ...
+```
+
+> [!TIP]
+> You can put a `@crunch/keep:none` at the top of the cell and never close it to keep absolutly nothing. <br />
+> You can put a `@crunch/keep:off` to restore the [default commenting behavior](#automatic-line-commenting).
 
 ## Specifying package versions
 

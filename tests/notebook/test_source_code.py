@@ -4,7 +4,7 @@ import pytest
 from parameterized import parameterized  # type: ignore
 
 from crunch_convert import Warning, WarningCategory, WarningLocation
-from crunch_convert.notebook import BadCellHandling, NotebookCellParseError, extract_from_cells
+from crunch_convert.notebook import BadCellHandling, ImportedRequirement, NotebookCellParseError, extract_from_cells
 
 from ._shared import cell
 
@@ -196,6 +196,47 @@ def test_keep_commands():
     """).lstrip()
 
     assert content == flatten.source_code
+
+
+def test_keep_none_command():
+    flatten = extract_from_cells([
+        cell("a", "code", [
+            "# @crunch/keep:none",
+            "import a",
+            "b = 42",
+            "def c(): ...",
+        ]),
+        cell("b", "code", [
+            "# @crunch/keep:none",
+            "import d",
+            "def e(): ...",
+            "# @crunch/keep:off",
+            "import f",
+            "g = 42",
+            "def h(): ...",
+        ]),
+    ])
+
+    content = textwrap.dedent("""
+        # @crunch/keep:none
+        #import a
+        #b = 42
+        #def c(): ...
+
+
+        # @crunch/keep:none
+        #import d
+        #def e(): ...
+        # @crunch/keep:off
+        import f
+        #g = 42
+        def h(): ...
+    """).lstrip()
+
+    assert content == flatten.source_code
+    assert flatten.requirements == [
+        ImportedRequirement(alias="f")
+    ]
 
 
 def test_pip_escape():

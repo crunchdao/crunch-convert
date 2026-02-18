@@ -28,6 +28,7 @@ _KV_DIVIDER = "---"
 
 _CRUNCH_KEEP_ON = "@crunch/keep:on"
 _CRUNCH_KEEP_OFF = "@crunch/keep:off"
+_CRUNCH_KEEP_NONE = "@crunch/keep:none"
 
 JUPYTER_MAGIC_COMMAND_PATTERN = r"^(\s*?)(!|%|pip3? )"
 
@@ -260,17 +261,22 @@ _IMPORT = (
     libcst.ImportFrom,
 )
 
-_KEEP = (
+_UNAFFECTED = (
     libcst.Module,
-
-    libcst.FunctionDef,
-    libcst.ClassDef,
 
     libcst.Comment,
     libcst.EmptyLine,
     libcst.TrailingWhitespace,
+)
+
+_KEEP = (
+    libcst.FunctionDef,
+    libcst.ClassDef,
 
     libcst.SimpleStatementLine,
+
+    *_UNAFFECTED,
+    *_IMPORT,
 )
 
 
@@ -312,6 +318,29 @@ class NestedImportFinder(libcst.CSTVisitor):
         return finder.found
 
 
+class _KeepMode(Enum):
+    NECESSARY = "necessary"
+    EVERYTHING = "everything"
+    NOTHING = "nothing"
+
+    def should_leave_untouched(
+        self,
+        node: libcst.CSTNode,
+        is_r_import_node: bool,
+    ) -> bool:
+        if self is _KeepMode.NECESSARY:
+            return isinstance(node, _KEEP) or isinstance(node, _IMPORT) or is_r_import_node
+
+        elif self is _KeepMode.EVERYTHING:
+            return True
+
+        elif self is _KeepMode.NOTHING:
+            return isinstance(node, _UNAFFECTED)
+
+        else:
+            raise NotImplementedError(f"keep mode: {self}")
+
+
 class CommentTransformer(libcst.CSTTransformer):
     METADATA_DEPENDENCIES = (libcst.metadata.PositionProvider,)
 
@@ -331,7 +360,7 @@ class CommentTransformer(libcst.CSTTransformer):
 
         self._method_stack: List[str] = []
         self._previous_import_node: Optional[ImportNodeType] = None
-        self._auto_comment = True
+        self._keep_mode = _KeepMode.NECESSARY
 
         self.warnings: List[Warning] = []
 
@@ -376,38 +405,20 @@ class CommentTransformer(libcst.CSTTransformer):
         method = self._method_stack.pop()
         # print("leave", type(original_node), method)
 
-        if isinstance(original_node, _IMPORT):
-            self._previous_import_node = original_node
-            return updated_node
-
-        r_requirement = is_r_import(original_node)
-        if r_requirement is not None:
-            self.r_import_names.append(r_requirement)
-            self._previous_import_node = cast(ImportNodeType, original_node)
-            return updated_node
-
-        if self._previous_import_node is not None:
-            import_node, self._previous_import_node = self._previous_import_node, None
-
-            if isinstance(original_node, libcst.TrailingWhitespace) and original_node.comment:
-                self.import_and_comment_nodes.append(
-                    (import_node, original_node.comment)
-                )
-            else:
-                self.import_and_comment_nodes.append(
-                    (import_node, None)
-                )
+        is_r_import_node = False
+        if self._keep_mode != _KeepMode.NOTHING:
+            is_r_import_node = self._handle_imports(original_node) or False
 
         if isinstance(original_node, libcst.EmptyLine) and original_node.comment:
             comment = strip_hashes(original_node.comment.value)
             if comment == _CRUNCH_KEEP_ON:
-                self._auto_comment = False
+                self._keep_mode = _KeepMode.EVERYTHING
             elif comment == _CRUNCH_KEEP_OFF:
-                self._auto_comment = True
+                self._keep_mode = _KeepMode.NECESSARY
+            elif comment == _CRUNCH_KEEP_NONE:
+                self._keep_mode = _KeepMode.NOTHING
 
-            return updated_node
-
-        if not self._auto_comment or isinstance(original_node, _KEEP):
+        if self._keep_mode.should_leave_untouched(original_node, is_r_import_node):
             return updated_node
 
         nodes: List[libcst.CSTNode] = []
@@ -448,6 +459,33 @@ class CommentTransformer(libcst.CSTTransformer):
             raise NotImplementedError(f"method: {method}")
 
         return libcst.FlattenSentinel(nodes)
+
+    def _handle_imports(self, original_node: libcst.CSTNode) -> Optional[bool]:
+        """
+        :rtype: bool | None: True if the node is an R import, None otherwise
+        """
+
+        if isinstance(original_node, _IMPORT):
+            self._previous_import_node = original_node
+            return
+
+        r_requirement = is_r_import(original_node)
+        if r_requirement is not None:
+            self.r_import_names.append(r_requirement)
+            self._previous_import_node = cast(ImportNodeType, original_node)
+            return True
+
+        if self._previous_import_node is not None:
+            import_node, self._previous_import_node = self._previous_import_node, None
+
+            if isinstance(original_node, libcst.TrailingWhitespace) and original_node.comment:
+                self.import_and_comment_nodes.append(
+                    (import_node, original_node.comment)
+                )
+            else:
+                self.import_and_comment_nodes.append(
+                    (import_node, None)
+                )
 
     def _to_lines(self, node: libcst.CSTNode) -> List[str]:
         return self.tree.code_for_node(node).splitlines()
