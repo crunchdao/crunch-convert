@@ -1,19 +1,19 @@
 from string import whitespace
 from textwrap import indent
-from typing import List
+from typing import List, Optional, TextIO
 
 
 def list_of_string_factory() -> List[str]:
     return []
 
 
-def print_indented(text: str):
+def print_indented(text: str, file: Optional[TextIO] = None):
     indented = indent(text, "   | ", lambda x: True)
 
     if indented.endswith("\n"):
         indented = indented[:-1]
 
-    print(indented)
+    print(indented, file=file)
 
 
 def cut_crlf(input: str):

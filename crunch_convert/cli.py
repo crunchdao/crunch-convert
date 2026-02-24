@@ -12,17 +12,17 @@ from crunch_convert.notebook import ConverterError, InconsistantLibraryVersionEr
 from crunch_convert.notebook._utils import print_indented
 from crunch_convert.requirements_txt import CachedWhitelist, CrunchHubWhitelist, LocalSitePackageVersionFinder, format_files_from_imported, format_files_from_named, freeze, parse_from_file
 
-the_crunch_api_base_url: str = None  # type: ignore
+crunch_api_base_url: str = None  # type: ignore
 
 
 @click.group()
 @click.version_option(__version__, package_name="__version__.__title__")
-@click.option("--crunch-api-base-url", envvar="CRUNCH_BASE_API_URL", default="https://api.hub.crunchdao.com/")
+@click.option("--crunch-api-base-url", "crunch_api_base_value", envvar="CRUNCH_BASE_API_URL", default="https://api.hub.crunchdao.com/")
 def cli(
-    crunch_api_base_url: str,
+    crunch_api_base_value: str,
 ):
-    global the_crunch_api_base_url
-    the_crunch_api_base_url = crunch_api_base_url
+    global crunch_api_base_url
+    crunch_api_base_url = crunch_api_base_value
 
 
 @cli.command(help="Convert a notebook to a python script.")
@@ -30,6 +30,7 @@ def cli(
 @click.option("--write-requirements", is_flag=True, help="Write the requirements.txt files.")
 @click.option("--write-embedded-files", is_flag=True, help="Write the embedded files.")
 @click.option("--no-freeze", is_flag=True, help="Don't freeze the requirements in requirements.txt with locally installed versions.")
+@click.option("--verbose", "-v", is_flag=True, help="Enable verbose output.")
 @click.argument("notebook-file-path", required=True)
 @click.argument("python-file-path", default="main.py")
 def notebook(
@@ -39,35 +40,41 @@ def notebook(
     no_freeze: bool,
     notebook_file_path: str,
     python_file_path: str,
+    verbose: bool,
 ):
-    print("convert file:", notebook_file_path)
+    if verbose:
+        print("convert file:", notebook_file_path)
+
+    def print_function(message: str):
+        if verbose:
+            print(message)
 
     try:
         flatten = extract_from_file(
             notebook_file_path,
-            print=print,
+            print=print_function,
             validate=True,
         )
     except IOError as error:
-        print(f"{notebook_file_path}: cannot read notebook file: {error}")
+        print(f"{notebook_file_path}: cannot read notebook file: {error}", file=sys.stderr)
         raise click.Abort()
     except json.JSONDecodeError as error:
-        print(f"{notebook_file_path}: cannot parse notebook file: {error}")
+        print(f"{notebook_file_path}: cannot parse notebook file: {error}", file=sys.stderr)
         raise click.Abort()
     except ConverterError as error:
-        print(f"{notebook_file_path}: convert failed: {error}")
+        print(f"{notebook_file_path}: convert failed: {error}", file=sys.stderr)
 
         if isinstance(error, NotebookCellParseError):
-            print(f"  cell: {error.cell_id} ({error.cell_index})")
-            print(f"  source:")
-            print_indented(error.cell_source)
-            print(f"  parser error:")
-            print_indented(error.parser_error or "None")
+            print(f"  cell: {error.cell_id} ({error.cell_index})", file=sys.stderr)
+            print(f"  source:", file=sys.stderr)
+            print_indented(error.cell_source, file=sys.stderr)
+            print(f"  parser error:", file=sys.stderr)
+            print_indented(error.parser_error or "None", file=sys.stderr)
 
         elif isinstance(error, InconsistantLibraryVersionError):
-            print(f"  package name: {error.package_name}")
-            print(f"  first version: {error.old}")
-            print(f"  other version: {error.new}")
+            print(f"  package name: {error.package_name}", file=sys.stderr)
+            print(f"  first version: {error.old}", file=sys.stderr)
+            print(f"  other version: {error.new}", file=sys.stderr)
 
         raise click.Abort()
 
@@ -78,7 +85,7 @@ def notebook(
         fd.write(flatten.source_code)
 
     if write_requirements:
-        whitelist = CachedWhitelist(CrunchHubWhitelist(api_base_url=the_crunch_api_base_url))
+        whitelist = CachedWhitelist(CrunchHubWhitelist(api_base_url=crunch_api_base_url))
         version_finder = LocalSitePackageVersionFinder()
 
         requirements_files = format_files_from_imported(
@@ -97,8 +104,9 @@ def notebook(
                     file_content=content
                 )
 
-                for requirement in requirements:
-                    print("freeze requirements:", requirement.name, requirement.extras, requirement.specs)
+                if verbose:
+                    for requirement in requirements:
+                        print("freeze requirements:", requirement.name, requirement.extras, requirement.specs)
 
                 frozen_requirements = freeze(
                     requirements=requirements,
@@ -161,7 +169,7 @@ def freeze_command(
         file_content=content,
     )
 
-    whitelist = CachedWhitelist(CrunchHubWhitelist(api_base_url=the_crunch_api_base_url))
+    whitelist = CachedWhitelist(CrunchHubWhitelist(api_base_url=crunch_api_base_url))
     version_finder = LocalSitePackageVersionFinder()
 
     for requirement in requirements:
@@ -171,7 +179,7 @@ def freeze_command(
         )
 
         if library is None:
-            print(f"not whitelisted: {requirement.name}")
+            print(f"not whitelisted: {requirement.name}", file=sys.stderr)
 
     requirements_files = format_files_from_named(
         requirements,
