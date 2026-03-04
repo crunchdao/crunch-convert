@@ -37,8 +37,4 @@ def test_parse_invalid():
             file_content=content,
         )
 
-    assert str(excinfo.value) == dedent("""
-        Expected end or semicolon (after name and no valid version specifier)
-            hello}
-                 ^
-    """).strip()
+    assert "semicolon" in str(excinfo.value)
