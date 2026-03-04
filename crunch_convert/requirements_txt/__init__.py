@@ -6,6 +6,7 @@ from crunch_convert.requirements_txt._freeze import LocalSitePackageVersionFinde
 from crunch_convert.requirements_txt._freeze import VersionFinder as VersionFinder
 from crunch_convert.requirements_txt._freeze import freeze as freeze
 from crunch_convert.requirements_txt._model import NamedRequirement as NamedRequirement
+from crunch_convert.requirements_txt._parse import RequirementParseError as RequirementParseError
 from crunch_convert.requirements_txt._parse import parse_from_file as parse_from_file
 from crunch_convert.requirements_txt._whitelist import CachedWhitelist as CachedWhitelist
 from crunch_convert.requirements_txt._whitelist import CrunchHubWhitelist as CrunchHubWhitelist
