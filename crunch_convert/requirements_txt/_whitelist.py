@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass
 from io import UnsupportedOperation
-from typing import Any, Dict, List, Optional, Set, Tuple, cast, overload
+from typing import Any, DefaultDict, Dict, List, Optional, Set, Tuple, cast, overload
 
 import requests
 
@@ -81,8 +81,8 @@ class CachedWhitelist(Whitelist):
 
         self._delegate = delegate
 
-        self._name_cache: dict[CacheCompositeKey, Library] = {}
-        self._alias_cache: dict[CacheCompositeKey, Library] = {}
+        self._name_cache: Dict[CacheCompositeKey, Library] = {}
+        self._alias_cache: DefaultDict[CacheCompositeKey, Dict[str, Library]] = defaultdict(dict)
 
     def find_library(
         self,
@@ -102,9 +102,20 @@ class CachedWhitelist(Whitelist):
             )
 
         elif alias is not None:
-            cached = self._alias_cache.get((language, alias))
+            cached = self._alias_cache.get((language, alias.lower()), None)
             if cached is not None:
-                return cached
+                libraries = list(cached.values())
+
+                if len(libraries) > 1:
+                    raise MultipleLibraryAliasCandidateException(
+                        alias=alias,
+                        names={
+                            library.name
+                            for library in libraries
+                        },
+                    )
+
+                return libraries[0]
 
             library = self._delegate.find_library(
                 language=language,
@@ -123,11 +134,13 @@ class CachedWhitelist(Whitelist):
     ) -> None:
         if library is None:
             return
+    
+        name = library.name.lower()
 
-        self._name_cache[(library.language, library.name.lower())] = library
+        self._name_cache[(library.language, name)] = library
 
         for alias in library.aliases:
-            self._alias_cache[(library.language, alias)] = library
+            self._alias_cache[(library.language, alias.lower())][name] = library
 
 
 class CrunchHubWhitelist(Whitelist):

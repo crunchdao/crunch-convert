@@ -1,9 +1,12 @@
 from typing import Optional
 
+import pytest
+
 from crunch_convert import RequirementLanguage
 from crunch_convert.requirements_txt import CachedWhitelist, Library, Whitelist
+from crunch_convert.requirements_txt._whitelist import MultipleLibraryAliasCandidateException
 
-from ._libraries import sklearn_library
+from ._libraries import emd_signal_library, pyemd_library, sklearn_library
 
 
 class DummyWhitelist(Whitelist):
@@ -74,3 +77,20 @@ def test_alias_name_cache():
     assert sklearn_library is whitelist.find_library(alias="sklearn")
     assert sklearn_library is whitelist.find_library(name="scikit-learn")
     assert 1 == spy.call_count
+
+
+def test_find_by_alias_collision():
+    spy = DummyWhitelist()
+    whitelist = CachedWhitelist(spy)
+
+    spy.reset(emd_signal_library)
+    whitelist.find_library(name=emd_signal_library.name)
+
+    spy.reset(pyemd_library)
+    whitelist.find_library(name=pyemd_library.name)
+
+    with pytest.raises(MultipleLibraryAliasCandidateException) as exc_info:
+        whitelist.find_library(alias="pyemd")
+
+    assert exc_info.value.alias == "pyemd"
+    assert exc_info.value.names == {"EMD-signal", "pyemd"}
