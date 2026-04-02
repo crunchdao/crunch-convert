@@ -1,4 +1,5 @@
 click
 libcst
+PyYAML
 requests
 requirements-parser>=0.11.0
