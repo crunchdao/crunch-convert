@@ -30,6 +30,7 @@ class RequirementLanguage(Enum):
 
 class WarningCategory(Enum):
     NESTED_IMPORT = "NESTED_IMPORT"
+    GLOBAL_VARIABLE = "GLOBAL_VARIABLE"
 
     @property
     def lower(self):
