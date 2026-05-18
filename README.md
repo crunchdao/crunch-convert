@@ -20,6 +20,9 @@ This Python library is designed for the [CrunchDAO Platform](https://hub.crunchd
     - [Ignore an import](#ignore-an-import)
   - [R imports via rpy2](#r-imports-via-rpy2)
   - [Embedded Files](#embedded-files)
+- [User Warnings](#user-warnings)
+  - [Nested imports](#nested-imports)
+  - [Global Constants](#global-constants)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -306,6 +309,18 @@ Aenean rutrum condimentum ornare.
 Submitting multiple cells with the same file name will be rejected.
 
 While the focus is on Markdown files, any text file will be accepted. Including but not limited to: `.txt`, `.yaml`, `.json`, ...
+
+# User Warnings
+
+The converter can detect potential issues that might arise when using the output files.
+
+## Nested imports
+
+Importing a package into a function will generate a warning indicating that the package will not be used when the `requirements.txt` file is generated.
+
+## Global Constants
+
+Global variables that are not guarded using the `@crunch/keep:on` command will likely be commented out. This means that referencing them in a nested scope without re-declaration will likely cause a guaranteed crash.
 
 # Contributing
 
