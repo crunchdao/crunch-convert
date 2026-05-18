@@ -1,4 +1,5 @@
 import textwrap
+from typing import List, Tuple, Union
 
 import pytest
 from parameterized import parameterized  # type: ignore
@@ -27,7 +28,7 @@ def test_normal():
         ])
     ])
 
-    content = textwrap.dedent("""
+    content = _dedent("""
         # Hello World
         
         
@@ -40,7 +41,7 @@ def test_normal():
         
         class Model:
             pass
-    """).lstrip()
+    """)
 
     assert content == flatten.source_code
 
@@ -65,22 +66,22 @@ def test_warning():
         ])
     ])
 
-    content = textwrap.dedent("""
+    content = _dedent("""
         # Hello World
-        
-        
+
+
         #try:
         #    import a
         #except:
         #    import b
-        
-        
+
+
         #if True:
         #    import c
         #else:
         #    import d
         #    import e
-    """).lstrip()
+    """)
 
     assert content == flatten.source_code
 
@@ -122,12 +123,12 @@ def test_ignore_error():
         bad_cell_handling=BadCellHandling.IGNORE,
     )
 
-    content = textwrap.dedent("""
+    content = _dedent("""
         def a(): ...
-        
-        
+
+
         #x = 2
-    """).lstrip()
+    """)
 
     assert content == flatten.source_code
 
@@ -149,7 +150,7 @@ def test_comment_error():
         bad_cell_handling=BadCellHandling.COMMENT,
     )
 
-    content = textwrap.dedent("""
+    content = _dedent("""
         def a(): ...
 
 
@@ -159,7 +160,7 @@ def test_comment_error():
 
 
         #x = 2
-    """).lstrip()
+    """)
 
     assert content == flatten.source_code
 
@@ -181,7 +182,7 @@ def test_keep_commands():
         ]),
     ])
 
-    content = textwrap.dedent("""
+    content = _dedent("""
         # @crunch/keep:on
         a = 42
         # @crunch/keep:off
@@ -193,7 +194,7 @@ def test_keep_commands():
 
 
         #d = 42
-    """).lstrip()
+    """)
 
     assert content == flatten.source_code
 
@@ -217,7 +218,7 @@ def test_keep_none_command():
         ]),
     ])
 
-    content = textwrap.dedent("""
+    content = _dedent("""
         # @crunch/keep:none
         #import a
         #b = 42
@@ -231,7 +232,7 @@ def test_keep_none_command():
         import f
         #g = 42
         def h(): ...
-    """).lstrip()
+    """)
 
     assert content == flatten.source_code
     assert flatten.requirements == [
@@ -247,10 +248,10 @@ def test_pip_escape():
         ]),
     ])
 
-    content = textwrap.dedent("""
+    content = _dedent("""
         #pip install pandas
         #pip3 install pandas
-    """).lstrip()
+    """)
 
     assert content == flatten.source_code
 
@@ -270,7 +271,7 @@ def test_invalid_syntax():
 @parameterized.expand([  # type: ignore
     (
         """
-        
+
         """,
         None,
     ),
@@ -392,10 +393,8 @@ def test_invalid_syntax():
     ("from a import b", "from a import b\n",),
 
     ("global x", "#global x\n",),
-    ("nonlocal x", "#nonlocal x\n",),  # technically not correct
     ("pass", "#pass\n",),
-    ("break", "#break\n",),  # technically not correct
-    ("continue", "#continue\n",),  # technically not correct
+    ("...", "#...\n",),
 
     ("x & y", "#x & y\n",),
     ("x - y", "#x - y\n",),
@@ -569,11 +568,266 @@ def test_invalid_syntax():
     ),
 ])
 def test_syntax(cell_content: str, expected: str):
-    cell_content = textwrap.dedent(cell_content).lstrip()
-    expected = textwrap.dedent(expected).lstrip() if expected else cell_content
+    cell_content = _dedent(cell_content)
+    expected = _dedent(expected) if expected else cell_content
 
     flatten = extract_from_cells([
         cell("a", "code", cell_content.splitlines()),
     ])
 
     assert expected == flatten.source_code
+
+
+@parameterized.expand([  # type: ignore
+    (
+        """
+        def foo():
+            return real_constant
+        """,
+        [],
+    ),
+    (
+        """
+        def foo():
+            not_a_constant = a
+            return not_a_constant
+        """,
+        [],
+    ),
+    (
+        """
+        def foo(not_a_constant):
+            return not_a_constant
+        """,
+        [],
+    ),
+    (
+        """
+        class Foo:
+            value = real_constant
+        """,
+        [],
+    ),
+    (
+        """
+        class Foo:
+            not_a_constant = 1
+            value = real_constant
+        """,
+        [],
+    ),
+    (
+        """
+        def foo():
+            bar(not_a_constant=42)
+
+        def foo():
+            bar(not_a_constant=real_constant)
+        """,
+        [],
+    ),
+    (
+        """
+        if True:
+            print(not_a_constant)
+            print(real_constant)
+        """,
+        [],
+    ),
+    (
+        """
+        try:
+            print(not_a_constant)
+            print(real_constant)
+        except:
+            pass
+        """,
+        [],
+    ),
+    (
+        """
+        a = {
+            'x': y + not_a_constant
+            for y in range(42)
+        }
+        """,
+        [],
+    ),
+    (
+        """
+        def foo():
+            return not_a_constant
+        """,
+        [
+            ("b", 2, 11, "not_a_constant"),
+        ],
+    ),
+    (
+        """
+        def foo():
+            return not_a_constant.a
+        """,
+        [
+            ("b", 2, 11, "not_a_constant"),
+        ],
+    ),
+    (
+        """
+        def foo():
+            a[not_a_constant] = 42
+            a[not_a_constant] += 42
+        """,
+        [
+            ("b", 2, 6, "not_a_constant"),
+            ("b", 3, 6, "not_a_constant"),
+        ],
+    ),
+    (
+        """
+        def foo():
+            not_a_constant[a] = 42
+            not_a_constant[a] += 42
+        """,
+        [
+            ("b", 2, 4, "not_a_constant"),
+            ("b", 3, 4, "not_a_constant"),
+        ],
+    ),
+    (
+        # technically do not works...
+        """
+        def foo():
+            not_a_constant += 42
+        """,
+        [],
+    ),
+    (
+        """
+        class Foo:
+            value = not_a_constant
+        """,
+        [
+            ("b", 2, 12, "not_a_constant"),
+        ],
+    ),
+    (
+        """
+        def foo():
+            global not_a_constant
+            return not_a_constant
+        """,
+        [
+            ("b", 3, 11, "not_a_constant"),
+        ],
+    ),
+    (
+        """
+        class Foo:
+            def bar():
+                return not_a_constant
+        """,
+        [
+            ("b", 3, 15, "not_a_constant"),
+        ],
+    ),
+    (
+        """
+        def foo():
+            return not_a_constant + not_a_constant + real_constant
+        """,
+        [
+            ("b", 2, 11, "not_a_constant"),
+            ("b", 2, 28, "not_a_constant"),
+        ],
+    ),
+    (
+        """
+        def foo():
+            return {
+                'x': not_a_constant + real_constant
+                for y in range(42)
+            }
+        """,
+        [
+            ("b", 3, 13, "not_a_constant"),
+        ],
+    ),
+    (
+        """
+        def foo():
+            return lambda x: not_a_constant + x
+        """,
+        [
+            ("b", 2, 21, "not_a_constant"),
+        ],
+    ),
+    (
+        """
+        def foo():
+            return late_constant
+
+        late_constant = 42
+        """,
+        [
+            ("b", 2, 11, "late_constant"),
+        ],
+    ),
+    (
+        [
+            """
+            def foo():
+                return even_more_late_constant
+            """,
+            """
+            even_more_late_constant = 42
+            """,
+        ],
+        [
+            ("b", 2, 11, "even_more_late_constant"),
+        ],
+    ),
+])
+def test_scope(cell_contents: Union[str, List[str]], expected_locations: List[Tuple[str, int, int, str]]):
+    if isinstance(cell_contents, str):
+        cell_contents = [cell_contents]
+
+    initializer = _dedent("""
+        not_a_constant = 42
+
+        # @crunch/keep:on
+        real_constant = 43
+        # @crunch/keep:off
+
+        not_a_constant_2 = 44
+    """)
+
+    flatten = extract_from_cells([
+        cell("a", "code", initializer.splitlines()),
+        *[
+            cell("bcdef"[index], "code", _dedent(content).splitlines())
+            for index, content in enumerate(cell_contents)
+        ]
+    ])
+
+    expected = (
+        []
+        if not expected_locations else
+        [
+            Warning(
+                category=WarningCategory.GLOBAL_VARIABLE,
+                message=f"found potential use of global variable `{name}` that will be commented out",
+                location=WarningLocation(
+                    file=file,
+                    line=line,
+                    column=column,
+                )
+            )
+            for file, line, column, name in expected_locations
+        ]
+    )
+
+    assert expected == flatten.warnings
+
+
+def _dedent(text: str) -> str:
+    return textwrap.dedent(text).lstrip()
