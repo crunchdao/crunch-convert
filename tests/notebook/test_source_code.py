@@ -1,5 +1,5 @@
 import textwrap
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 import pytest
 from parameterized import parameterized  # type: ignore
@@ -628,11 +628,38 @@ def test_syntax(cell_content: str, expected: str):
     ),
     (
         """
+        if True:
+            print(not_a_constant)
+            print(real_constant)
+        """,
+        [],
+    ),
+    (
+        """
+        try:
+            print(not_a_constant)
+            print(real_constant)
+        except:
+            pass
+        """,
+        [],
+    ),
+    (
+        """
+        a = {
+            'x': y + not_a_constant
+            for y in range(42)
+        }
+        """,
+        [],
+    ),
+    (
+        """
         def foo():
             return not_a_constant
         """,
         [
-            (2, 11),
+            ("b", 2, 11, "not_a_constant"),
         ],
     ),
     (
@@ -641,7 +668,7 @@ def test_syntax(cell_content: str, expected: str):
             return not_a_constant.a
         """,
         [
-            (2, 11),
+            ("b", 2, 11, "not_a_constant"),
         ],
     ),
     (
@@ -651,8 +678,8 @@ def test_syntax(cell_content: str, expected: str):
             a[not_a_constant] += 42
         """,
         [
-            (2, 6),
-            (3, 6),
+            ("b", 2, 6, "not_a_constant"),
+            ("b", 3, 6, "not_a_constant"),
         ],
     ),
     (
@@ -662,8 +689,8 @@ def test_syntax(cell_content: str, expected: str):
             not_a_constant[a] += 42
         """,
         [
-            (2, 4),
-            (3, 4),
+            ("b", 2, 4, "not_a_constant"),
+            ("b", 3, 4, "not_a_constant"),
         ],
     ),
     (
@@ -680,7 +707,7 @@ def test_syntax(cell_content: str, expected: str):
             value = not_a_constant
         """,
         [
-            (2, 12),
+            ("b", 2, 12, "not_a_constant"),
         ],
     ),
     (
@@ -690,7 +717,7 @@ def test_syntax(cell_content: str, expected: str):
             return not_a_constant
         """,
         [
-            (3, 11),
+            ("b", 3, 11, "not_a_constant"),
         ],
     ),
     (
@@ -700,7 +727,7 @@ def test_syntax(cell_content: str, expected: str):
                 return not_a_constant
         """,
         [
-            (3, 15),
+            ("b", 3, 15, "not_a_constant"),
         ],
     ),
     (
@@ -709,13 +736,60 @@ def test_syntax(cell_content: str, expected: str):
             return not_a_constant + not_a_constant + real_constant
         """,
         [
-            (2, 11),
-            (2, 28),
+            ("b", 2, 11, "not_a_constant"),
+            ("b", 2, 28, "not_a_constant"),
+        ],
+    ),
+    (
+        """
+        def foo():
+            return {
+                'x': not_a_constant + real_constant
+                for y in range(42)
+            }
+        """,
+        [
+            ("b", 3, 13, "not_a_constant"),
+        ],
+    ),
+    (
+        """
+        def foo():
+            return lambda x: not_a_constant + x
+        """,
+        [
+            ("b", 2, 21, "not_a_constant"),
+        ],
+    ),
+    (
+        """
+        def foo():
+            return late_constant
+
+        late_constant = 42
+        """,
+        [
+            ("b", 2, 11, "late_constant"),
+        ],
+    ),
+    (
+        [
+            """
+            def foo():
+                return even_more_late_constant
+            """,
+            """
+            even_more_late_constant = 42
+            """,
+        ],
+        [
+            ("b", 2, 11, "even_more_late_constant"),
         ],
     ),
 ])
-def test_scope(cell_content: str, expected_locations: List[Tuple[int, int]]):
-    cell_content = _dedent(cell_content)
+def test_scope(cell_contents: Union[str, List[str]], expected_locations: List[Tuple[str, int, int, str]]):
+    if isinstance(cell_contents, str):
+        cell_contents = [cell_contents]
 
     initializer = _dedent("""
         not_a_constant = 42
@@ -729,7 +803,10 @@ def test_scope(cell_content: str, expected_locations: List[Tuple[int, int]]):
 
     flatten = extract_from_cells([
         cell("a", "code", initializer.splitlines()),
-        cell("b", "code", cell_content.splitlines()),
+        *[
+            cell("bcdef"[index], "code", _dedent(content).splitlines())
+            for index, content in enumerate(cell_contents)
+        ]
     ])
 
     expected = (
@@ -738,14 +815,14 @@ def test_scope(cell_content: str, expected_locations: List[Tuple[int, int]]):
         [
             Warning(
                 category=WarningCategory.GLOBAL_VARIABLE,
-                message="found potential use of global variable `not_a_constant` that will be commented out",
+                message=f"found potential use of global variable `{name}` that will be commented out",
                 location=WarningLocation(
-                    file="b",
-                    line=expected_location[0],
-                    column=expected_location[1],
+                    file=file,
+                    line=line,
+                    column=column,
                 )
             )
-            for expected_location in expected_locations
+            for file, line, column, name in expected_locations
         ]
     )
 

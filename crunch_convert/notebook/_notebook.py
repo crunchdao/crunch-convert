@@ -356,7 +356,7 @@ class _KeepMode(Enum):
             return None
 
 
-class ConstantUsageChecker(libcst.CSTVisitor):
+class _ConstantUsageChecker(libcst.CSTVisitor):
     METADATA_DEPENDENCIES = (
         libcst.metadata.ScopeProvider,
         libcst.metadata.PositionProvider,
@@ -372,8 +372,6 @@ class ConstantUsageChecker(libcst.CSTVisitor):
 
         self._current_keep_mode = _KeepMode.NECESSARY
 
-        self.warnings: List[Warning] = []
-
     def visit_Module(self, node: libcst.Module) -> None:
         self._current_keep_mode = _KeepMode.NECESSARY
 
@@ -384,6 +382,16 @@ class ConstantUsageChecker(libcst.CSTVisitor):
         keep_mode = _KeepMode.from_comment(node.comment)
         if keep_mode is not None:
             self._current_keep_mode = keep_mode
+
+    def visit_Assign(self, node: libcst.Assign) -> None:
+        for target in node.targets:
+            self._extract_names_from_targets(target.target)
+
+    def visit_AnnAssign(self, node: libcst.AnnAssign) -> None:
+        self._extract_names_from_targets(node.target)
+
+    def visit_AugAssign(self, node: libcst.AugAssign) -> None:
+        self._extract_names_from_targets(node.target)
 
     def _extract_names_from_target(self, node: libcst.CSTNode) -> List[libcst.Name]:
         if isinstance(node, libcst.Name):
@@ -416,65 +424,70 @@ class ConstantUsageChecker(libcst.CSTVisitor):
         else:
             self._deleted_globals.add(name)
 
-    def visit_Assign(self, node: libcst.Assign) -> None:
-        # NAME = value
-        # (NAME, NAME) = value
+    def _is_nested_in_non_global(self, scope: libcst.metadata.Scope) -> bool:
+        while (
+            isinstance(scope, libcst.metadata.ComprehensionScope)
+            or (isinstance(scope, libcst.metadata.FunctionScope) and isinstance(scope.node, libcst.Lambda))
+        ):
+            scope = scope.parent
 
-        for target in node.targets:
-            self._extract_names_from_targets(target.target)
+        return not isinstance(scope, libcst.metadata.GlobalScope)
 
-    def visit_AnnAssign(self, node: libcst.AnnAssign) -> None:
-        # NAME: type = value
-
-        self._extract_names_from_targets(node.target)
-
-    def visit_AugAssign(self, node: libcst.AugAssign) -> None:
-        # NAME += value
-
-        self._extract_names_from_targets(node.target)
-
-    def visit_Name(self, node: libcst.Name) -> None:
-        name = node.value
-        if name not in self._deleted_globals:
-            return
-
-        # Name() don't have a scope if used as kwargs' keys (e.g. func(NAME=value))
-        scope = self.get_metadata(libcst.metadata.ScopeProvider, node, default=None)
-        if scope is None:
-            return
-
-        if isinstance(scope, libcst.metadata.GlobalScope):
-            return
-
-        for assignment in scope.assignments:
-            if assignment.name == name:
-                return
-
-        position = self.get_metadata(libcst.metadata.PositionProvider, node, None).start  # pyright: ignore[reportOptionalMemberAccess]
-
-        self.warnings.append(Warning(
-            category=WarningCategory.GLOBAL_VARIABLE,
-            message=f"found potential use of global variable `{name}` that will be commented out",
-            location=WarningLocation(
-                file=self.cell_id,  # pyright: ignore[reportArgumentType]
-                line=position.line,
-                column=position.column,
-            ),
-        ))
-
-    def check(self, cell_id: str, tree: libcst.metadata.MetadataWrapper):
-        self.warnings = []
+    def analyze(self, cell_id: str, tree: libcst.metadata.MetadataWrapper):
         self.cell_id = cell_id
 
         tree.visit(self)
 
         self.cell_id = None
 
-    def get_last_warnings(self):
-        return self.warnings
+    def check_references(self, cell_id: str, tree: libcst.metadata.MetadataWrapper) -> List[Warning]:
+        warnings: List[Warning] = []
+
+        if not self._deleted_globals:
+            return warnings
+
+        scopes = set(tree.resolve(libcst.metadata.ScopeProvider).values())
+        positions = tree.resolve(libcst.metadata.PositionProvider)
+
+        for scope in scopes:
+            if scope is None or isinstance(scope, libcst.metadata.GlobalScope):
+                continue
+
+            if not self._is_nested_in_non_global(scope):
+                continue
+
+            for access in scope.accesses:
+                if not isinstance(access.node, libcst.Name):
+                    continue
+
+                name = access.node.value
+                if name not in self._deleted_globals:
+                    continue
+
+                referents = access.referents
+                has_any_global_assign = any(
+                    isinstance(assignment.scope, libcst.metadata.GlobalScope)
+                    for assignment in referents
+                )
+                if len(referents) and not has_any_global_assign:
+                    continue
+
+                position = positions[access.node].start
+
+                warnings.append(Warning(
+                    category=WarningCategory.GLOBAL_VARIABLE,
+                    message=f"found potential use of global variable `{name}` that will be commented out",
+                    location=WarningLocation(
+                        file=cell_id,
+                        line=position.line,
+                        column=position.column,
+                    ),
+                ))
+
+        return warnings
 
 
-class CommentTransformer(libcst.CSTTransformer):
+class _CommentTransformer(libcst.CSTTransformer):
     METADATA_DEPENDENCIES = (libcst.metadata.PositionProvider,)
 
     METHOD_GROUP = "group"
@@ -641,11 +654,16 @@ class _NotebookProcessor:
         self.print = print
 
         self.module: List[str] = []
-        self.warnings_by_cell_id: List[Tuple[str, List[Warning]]] = []
+
+        self.all_warnings: List[Warning] = []
+        self.cell_id_order: List[str] = []
+
         self.embedded_files: Dict[str, EmbeddedFile] = {}
         self.imported_requirements: DefaultDict[RequirementLanguage, Dict[str, ImportedRequirement]] = defaultdict(dict)
 
-        self.constant_usage_checker = ConstantUsageChecker()
+        self.constant_usage_checker = _ConstantUsageChecker()
+
+        self.cell_ids_and_trees: List[Tuple[str, libcst.metadata.MetadataWrapper]] = []
 
     def extract_cell(
         self,
@@ -721,15 +739,15 @@ class _NotebookProcessor:
             ) from error
 
         tree = libcst.metadata.MetadataWrapper(original_tree)
-        self.constant_usage_checker.check(cell_id, tree)
+        self.cell_ids_and_trees.append((cell_id, tree))
 
-        transformer = CommentTransformer(cell_id, original_tree)
+        self.constant_usage_checker.analyze(cell_id, tree)
+
+        transformer = _CommentTransformer(cell_id, original_tree)
         tree = tree.visit(transformer)
 
-        warnings: List[Warning] = []
-        warnings.extend(transformer.warnings)
-        warnings.extend(self.constant_usage_checker.get_last_warnings())
-        self.warnings_by_cell_id.append((cell_id, warnings))
+        self.cell_id_order.append(cell_id)
+        self.all_warnings.extend(transformer.warnings)
 
         for import_node, comment_node in transformer.import_and_comment_nodes:
             new_requirements = _convert_python_import(log, import_node, comment_node)
@@ -849,11 +867,21 @@ class _NotebookProcessor:
 
         log(f"embed {lower_file_path}: {len(content)} characters")
 
-    def finalize_source_code(self):
+    def finalize(self):
+        for cell_id, tree in self.cell_ids_and_trees:
+            warnings = self.constant_usage_checker.check_references(cell_id, tree)
+            self.all_warnings.extend(warnings)
+
+        self.all_warnings.sort(key=lambda warning: (
+            self.cell_id_order.index(warning.location.file),
+            warning.location.line,
+            warning.location.column
+        ))
+
         if len(self.module) and self.module[-1] != "":
             self.module.append("")
 
-        return "\n".join(self.module)
+        return self.all_warnings, "\n".join(self.module)
 
 
 def _validate(source_code: str):
@@ -911,15 +939,13 @@ def extract_from_cells(
             error.cell_id = cell_id
             raise
 
-    source_code = processor.finalize_source_code()
+    (
+        all_warnings,
+        source_code,
+    ) = processor.finalize()
 
     if validate:
         _validate(source_code)
-
-    all_warnings: List[Warning] = []
-    for _, warnings in processor.warnings_by_cell_id:
-        warnings.sort(key=lambda warning: (warning.location.line, warning.location.column))
-        all_warnings.extend(warnings)
 
     return FlattenNotebook(
         source_code=source_code,
