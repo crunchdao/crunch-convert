@@ -98,7 +98,7 @@ with open("requirements.txt", "r") as fd:
 # Parse it into NamedRequirement
 requirements = parse_from_file(
     language=RequirementLanguage.PYTHON,
-    file_content=content
+    file_content=content,
 )
 
 # Freeze them

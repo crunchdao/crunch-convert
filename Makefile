@@ -1,4 +1,4 @@
-PYTHON=python
+PYTHON=python3
 PIP=$(PYTHON) -m pip
 
 install:
@@ -10,11 +10,14 @@ uninstall:
 test:
 	$(PYTHON) -m pytest -vv
 
+test-fail-fast:
+	$(PYTHON) -m pytest -vv -x
+
 test-with-coverage:
 	$(PYTHON) -m pytest --cov=crunch_convert --cov-report=html -vv
 
 build:
 	rm -rf build *.egg-info dist
-	python setup.py sdist bdist_wheel
+	$(PYTHON) setup.py sdist bdist_wheel
 
 .PHONY: install uninstall test build
