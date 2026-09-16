@@ -3,6 +3,7 @@ from textwrap import dedent
 import pytest
 from parameterized import parameterized  # type: ignore
 
+from crunch_convert import RequirementLanguage
 from crunch_convert.requirements_txt import RequirementParseError, parse_from_file, parse_from_line
 
 
@@ -144,3 +145,31 @@ def test_parse_marker():
         )
 
     assert "markers are not allowed" in str(excinfo.value)
+
+
+def test_parse_specs_r():
+    line = dedent(f"""
+        pandas>1
+    """)
+
+    with pytest.raises(RequirementParseError) as excinfo:
+        parse_from_line(
+            language=RequirementLanguage.R,
+            requirement_line=line,
+        )
+
+    assert "extras and/or specs" in str(excinfo.value)
+
+
+def test_parse_extras_r():
+    line = dedent(f"""
+        pandas[extra]
+    """)
+
+    with pytest.raises(RequirementParseError) as excinfo:
+        parse_from_line(
+            language=RequirementLanguage.R,
+            requirement_line=line,
+        )
+
+    assert "extras and/or specs" in str(excinfo.value)

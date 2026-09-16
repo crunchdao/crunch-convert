@@ -92,6 +92,12 @@ def parse_from_line(
     extras = [x.lower() for x in list(requirement.extras)]
     specs = [str(x) for x in requirement.specifier]
 
+    if not language.supports_extras_and_specs and (extras or specs):
+        raise RequirementParseError(
+            f"{language.value} does not support extras and/or specs",
+            source=line,
+        )
+
     return NamedRequirement(
         name=name,
         extras=extras,
