@@ -10,7 +10,7 @@ from crunch_convert._model import RequirementLanguage
 from crunch_convert._utils import MockedWriteTextIO
 from crunch_convert.notebook import ConverterError, InconsistantLibraryVersionError, NotebookCellParseError, extract_from_file
 from crunch_convert.notebook._utils import print_indented
-from crunch_convert.requirements_txt import CachedWhitelist, CrunchHubWhitelist, LocalSitePackageVersionFinder, format_files_from_imported, format_files_from_named, freeze, parse_from_file
+from crunch_convert.requirements_txt import CachedWhitelist, CrunchHubWhitelist, LocalSitePackageVersionFinder, RequirementParseError, format_files_from_imported, format_files_from_named, freeze, parse_from_file
 
 crunch_api_base_url: str = None  # type: ignore
 
@@ -101,7 +101,7 @@ def notebook(
             if not no_freeze:
                 requirements = parse_from_file(
                     language=requirement_language,
-                    file_content=content
+                    file_content=content,
                 )
 
                 if verbose:
@@ -140,6 +140,42 @@ def notebook(
 @cli.group()
 def requirements_txt():
     pass  # pragma: no cover
+
+
+@requirements_txt.command(name="parse", help="Parse a requirements.txt file.")
+@click.option("--language", "language_name", type=click.Choice([RequirementLanguage.PYTHON.name, RequirementLanguage.R.name], case_sensitive=False), default=RequirementLanguage.PYTHON.name, help="Language of the requirements.txt file.")
+@click.argument("requirements-txt-file-path", type=click.Path(readable=True, dir_okay=False), required=False)
+def parse_command(
+    language_name: str,
+    requirements_txt_file_path: Optional[str],
+):
+    language = RequirementLanguage[language_name.upper()]
+
+    if requirements_txt_file_path is None:
+        requirements_txt_file_path = language.txt_file_name
+
+    with open(requirements_txt_file_path) as fd:
+        content = fd.read()
+
+    try:
+        requirements = parse_from_file(
+            language=language,
+            file_content=content,
+        )
+    except RequirementParseError as exception:
+        print(exception, file=sys.stderr)
+        raise click.Abort()
+
+    for requirement in requirements:
+        print(requirement.name)
+
+        if requirement.extras:
+            extras = ', '.join(requirement.extras)
+            print(f"  extras: {extras}")
+
+        if requirement.specs:
+            specs = ', '.join(requirement.specs)
+            print(f"  specs: {specs}")
 
 
 @requirements_txt.command(name="freeze", help="Freeze a requirements.txt file.")
