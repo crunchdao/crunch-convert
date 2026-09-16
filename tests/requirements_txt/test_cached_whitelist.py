@@ -3,8 +3,7 @@ from typing import Optional
 import pytest
 
 from crunch_convert import RequirementLanguage
-from crunch_convert.requirements_txt import CachedWhitelist, Library, Whitelist
-from crunch_convert.requirements_txt._whitelist import MultipleLibraryAliasCandidateException
+from crunch_convert.requirements_txt import CachedWhitelist, Library, MultipleLibraryAliasCandidateException, Whitelist
 
 from ._libraries import emd_signal_library, pyemd_library, sklearn_library
 

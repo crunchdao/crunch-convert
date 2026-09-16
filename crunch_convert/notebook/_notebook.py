@@ -12,11 +12,11 @@ import libcst
 import libcst.metadata
 import yaml
 
-import requirements
 from crunch_convert._model import RequirementLanguage, Warning, WarningCategory, WarningLocation
 from crunch_convert.notebook._model import EmbeddedFile, ImportedRequirement
 from crunch_convert.notebook._r import is_r_import
 from crunch_convert.notebook._utils import cut_crlf, format_requirement_line, strip_hashes
+from crunch_convert.requirements_txt._parse import parse_from_line
 
 _FAKE_PACKAGE_NAME = "x__fake_package_name__"
 _PACKAGE_NAME_PATTERN = r"[a-zA-Z_][a-zA-Z0-9_-]*[a-zA-Z0-9]"
@@ -145,10 +145,15 @@ def _extract_import_version(
     line = f"{test_package_name} {version_part}"
 
     try:
-        requirement = next(requirements.parse(line), None)
+        requirement = parse_from_line(
+            requirement_line=line,
+            language=RequirementLanguage.PYTHON,
+        )
+
         if requirement is None:
             log(f"skip version: parse returned nothing: `{line}`")
             return None
+
     except Exception as error:
         raise RequirementVersionParseError(
             f"version cannot be parsed: {error}"
@@ -162,11 +167,8 @@ def _extract_import_version(
 
     return ImportInfo(
         user_package_name or None,
-        list(requirement.extras),
-        [
-            f"{operator}{semver}"
-            for operator, semver in requirement.specs
-        ],
+        requirement.extras,
+        requirement.specs,
     )
 
 
