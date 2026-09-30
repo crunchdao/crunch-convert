@@ -2,7 +2,7 @@ import textwrap
 
 import pytest
 
-from crunch_convert.notebook import ImportedRequirement, InconsistantLibraryVersionError, RequirementVersionParseError, extract_from_cells
+from crunch_convert.notebook import BadCellHandling, ImportedRequirement, InconsistantLibraryVersionError, RequirementVersionParseError, extract_from_cells
 
 from ._shared import cell
 
@@ -146,3 +146,27 @@ def test_import_with_commented():
     """).lstrip()
 
     assert content == flatten.source_code
+
+
+def test_bad_import_with_ignore():
+    flatten = extract_from_cells(
+        cells=[
+            cell("a", "code", [
+                "import pandas # == 1.0 ;",
+                "import numpy # == 2.0",
+            ]),
+        ],
+        bad_cell_handling=BadCellHandling.IGNORE
+    )
+
+    content = textwrap.dedent("""
+        import pandas # == 1.0 ;
+        import numpy # == 2.0
+    """).lstrip()
+
+    assert content == flatten.source_code
+
+    assert flatten.requirements == [
+        ImportedRequirement(alias="pandas"),
+        ImportedRequirement(alias="numpy", specs=[("==2.0")]),
+    ]

@@ -115,7 +115,8 @@ class InconsistantLibraryVersionError(ConverterError):
 
 def _extract_import_version(
     log: LogFunction,
-    comment_node: Optional[libcst.Comment]
+    comment_node: Optional[libcst.Comment],
+    bad_cell_handling: BadCellHandling,
 ) -> Optional[Union[ImportInfo, _IgnoreImportType]]:
     if comment_node is None:
         log(f"skip version: no comment")
@@ -155,6 +156,10 @@ def _extract_import_version(
             return None
 
     except Exception as error:
+        if bad_cell_handling == BadCellHandling.IGNORE:
+            log(f"skip version: parse error ignored: {error}")
+            return None
+
         raise RequirementVersionParseError(
             f"version cannot be parsed: {error}"
         ) from error
@@ -187,7 +192,8 @@ def _evaluate_name(node: libcst.CSTNode) -> str:
 def _convert_python_import(
     log: LogFunction,
     import_node: ImportNodeType,
-    comment_node: Optional[libcst.Comment]
+    comment_node: Optional[libcst.Comment],
+    bad_cell_handling: BadCellHandling,
 ) -> List[ImportedRequirement]:
     if isinstance(import_node, libcst.Import):
         paths = [
@@ -199,7 +205,7 @@ def _convert_python_import(
     else:
         return []
 
-    import_info = _extract_import_version(log, comment_node)
+    import_info = _extract_import_version(log, comment_node, bad_cell_handling)
 
     if import_info is _IgnoreImport:
         log(f"skip version: ignored by comment")
@@ -752,7 +758,12 @@ class _NotebookProcessor:
         self.all_warnings.extend(transformer.warnings)
 
         for import_node, comment_node in transformer.import_and_comment_nodes:
-            new_requirements = _convert_python_import(log, import_node, comment_node)
+            new_requirements = _convert_python_import(
+                log,
+                import_node,
+                comment_node,
+                self.bad_cell_handling,
+            )
 
             _add_to_packages(
                 self.imported_requirements[RequirementLanguage.PYTHON],
