@@ -336,11 +336,11 @@ def test_invalid_syntax():
     ),
     (
         """
-        with open("file.txt") as f:
+        with open("file.txt", encoding="utf-8") as f:
             print(f.read())
         """,
         """
-        #with open("file.txt") as f:
+        #with open("file.txt", encoding="utf-8") as f:
         #    print(f.read())
         """,
     ),

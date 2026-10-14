@@ -29,7 +29,7 @@ def _get_notebook_paths() -> Iterable[str]:
             if not os.path.exists(manifest_file):
                 continue
 
-            with open(manifest_file, "r") as file:
+            with open(manifest_file, encoding="utf-8") as file:
                 manifest = json.loads(file.read())
 
             if not manifest.get("notebook") or manifest.get("language") != "PYTHON":

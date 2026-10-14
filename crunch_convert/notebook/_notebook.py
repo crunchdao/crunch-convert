@@ -978,7 +978,7 @@ def extract_from_file(
     print: Optional[LogFunction] = None,
     validate: bool = True,
 ) -> FlattenNotebook:
-    with open(path) as fd:
+    with open(path, encoding="utf-8") as fd:
         notebook = json.load(fd)
 
     cells = notebook["cells"]

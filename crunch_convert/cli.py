@@ -154,7 +154,7 @@ def parse_command(
     if requirements_txt_file_path is None:
         requirements_txt_file_path = language.txt_file_name
 
-    with open(requirements_txt_file_path) as fd:
+    with open(requirements_txt_file_path, encoding="utf-8") as fd:
         content = fd.read()
 
     try:
@@ -197,7 +197,7 @@ def freeze_command(
     if requirements_txt_file_path is None:
         requirements_txt_file_path = language.txt_file_name
 
-    with open(requirements_txt_file_path) as fd:
+    with open(requirements_txt_file_path, encoding="utf-8") as fd:
         content = fd.read()
 
     requirements = parse_from_file(
@@ -262,4 +262,4 @@ def _open_with_consent(override: bool, file_path: str) -> TextIO:
         if not override:
             return cast(TextIO, MockedWriteTextIO())
 
-    return open(file_path, "w")
+    return open(file_path, "w", encoding="utf-8")
