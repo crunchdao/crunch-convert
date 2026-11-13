@@ -52,6 +52,7 @@ def freeze(
                 extras=requirement.extras,
                 specs=[f"=={latest_version}"],
                 language=requirement.language,
+                marker=requirement.marker,
             )
 
         frozen_requirements.append(requirement)

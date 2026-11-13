@@ -155,6 +155,9 @@ def _extract_import_version(
             log(f"skip version: parse returned nothing: `{line}`")
             return None
 
+        if requirement.marker is not None:
+            raise ValueError(f"markers are not supported in notebook imports: {requirement.marker}")
+
     except Exception as error:
         if bad_cell_handling == BadCellHandling.IGNORE:
             log(f"skip version: parse error ignored: {error}")

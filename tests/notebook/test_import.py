@@ -170,3 +170,29 @@ def test_bad_import_with_ignore():
         ImportedRequirement(alias="pandas"),
         ImportedRequirement(alias="numpy", specs=[("==2.0")]),
     ]
+
+
+def test_marker_not_supported():
+    with pytest.raises(RequirementVersionParseError) as excinfo:
+        extract_from_cells([
+            cell("a", "code", [
+                "import hello # == 1; python_version < '3.8'",
+            ])
+        ])
+
+    assert "markers are not supported in notebook imports" in str(excinfo.value)
+
+
+def test_marker_with_ignore():
+    flatten = extract_from_cells(
+        cells=[
+            cell("a", "code", [
+                "import hello # == 1; python_version < '3.8'",
+            ]),
+        ],
+        bad_cell_handling=BadCellHandling.IGNORE
+    )
+
+    assert flatten.requirements == [
+        ImportedRequirement(alias="hello"),
+    ]

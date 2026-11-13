@@ -1,4 +1,5 @@
 from textwrap import dedent
+from typing import List
 
 import pytest
 from parameterized import parameterized  # type: ignore
@@ -134,17 +135,51 @@ def test_parse_url(
     assert "urls are not allowed" in str(excinfo.value)
 
 
-def test_parse_marker():
+@parameterized.expand([  # type: ignore
+    ('pandas; python_version < "3.8"', "pandas", [], [], 'python_version < "3.8"'),
+    ('pandas ; python_version < "3.8"  # comment', "pandas", [], [], 'python_version < "3.8"'),
+    ('pandas==2.0.0; sys_platform == "linux"', "pandas", [], ["==2.0.0"], 'sys_platform == "linux"'),
+    ('pandas[performance]>=2; python_version >= "3.9" and platform_machine == "x86_64"', "pandas", ["performance"], [">=2"], 'python_version >= "3.9" and platform_machine == "x86_64"'),
+])
+def test_parse_marker(
+    line: str,
+    expected_name: str,
+    expected_extras: List[str],
+    expected_specs: List[str],
+    expected_marker: str,
+):
+    requirement = parse_from_line(
+        requirement_line=line,
+    )
+
+    assert requirement is not None
+    assert requirement.name == expected_name
+    assert requirement.extras == expected_extras
+    assert requirement.specs == expected_specs
+    assert requirement.marker == expected_marker
+
+
+def test_parse_no_marker():
+    requirement = parse_from_line(
+        requirement_line="pandas",
+    )
+
+    assert requirement is not None
+    assert requirement.marker is None
+
+
+def test_parse_marker_r():
     line = dedent(f"""
         pandas; python_version < "3.8"
     """)
 
     with pytest.raises(RequirementParseError) as excinfo:
         parse_from_line(
+            language=RequirementLanguage.R,
             requirement_line=line,
         )
 
-    assert "markers are not allowed" in str(excinfo.value)
+    assert "does not support qualifiers" in str(excinfo.value)
 
 
 def test_parse_specs_r():
@@ -158,7 +193,7 @@ def test_parse_specs_r():
             requirement_line=line,
         )
 
-    assert "extras and/or specs" in str(excinfo.value)
+    assert "does not support qualifiers" in str(excinfo.value)
 
 
 def test_parse_extras_r():
@@ -172,4 +207,4 @@ def test_parse_extras_r():
             requirement_line=line,
         )
 
-    assert "extras and/or specs" in str(excinfo.value)
+    assert "does not support qualifiers" in str(excinfo.value)

@@ -22,12 +22,16 @@ class RequirementLanguage(Enum):
         value: str,
         txt_file_name: str,
         original_txt_file_name: str,
-        supports_extras_and_specs: bool,
+        supports_qualifiers: bool,
     ):
         value  # type: ignore
         self.txt_file_name = txt_file_name
         self.original_txt_file_name = original_txt_file_name
-        self.supports_extras_and_specs = supports_extras_and_specs
+        self.supports_qualifiers = supports_qualifiers
+
+    @property
+    def supports_extras_and_specs(self) -> bool:
+        return self.supports_qualifiers
 
 
 class WarningCategory(Enum):

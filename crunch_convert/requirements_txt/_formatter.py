@@ -76,6 +76,7 @@ def _format_files_filtered(
                 None,
                 requirement.extras,
                 requirement.specs,
+                get_marker(requirement),
             ))
 
         elif library.standard:
@@ -95,6 +96,7 @@ def _format_files_filtered(
                 None,
                 requirement.extras,
                 requirement.specs,
+                get_marker(requirement),
             ))
 
     third_party.sort(key=str.lower)
@@ -128,8 +130,12 @@ def format_line(
     alias: Optional[str],
     extras: List[str],
     specs: List[str],
+    marker: Optional[str] = None,
 ) -> str:
     line = format_requirement_line(name, extras, specs)
+
+    if marker:
+        line += f"; {marker}"
 
     if alias and name != alias:
         line += f"  # alias of {alias}"
@@ -144,6 +150,15 @@ def get_fallback_name(
         return requirement.name or requirement.alias
 
     return requirement.name
+
+
+def get_marker(
+    requirement: Requirement,
+) -> Optional[str]:
+    if isinstance(requirement, NamedRequirement):
+        return requirement.marker
+
+    return None
 
 
 def find_library(

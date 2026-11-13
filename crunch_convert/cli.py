@@ -106,7 +106,7 @@ def notebook(
 
                 if verbose:
                     for requirement in requirements:
-                        print("freeze requirements:", requirement.name, requirement.extras, requirement.specs)
+                        print("freeze requirements:", requirement.name, requirement.extras, requirement.specs, requirement.marker)
 
                 frozen_requirements = freeze(
                     requirements=requirements,
@@ -176,6 +176,9 @@ def parse_command(
         if requirement.specs:
             specs = ', '.join(requirement.specs)
             print(f"  specs: {specs}")
+
+        if requirement.marker:
+            print(f"  marker: {requirement.marker}")
 
 
 @requirements_txt.command(name="freeze", help="Freeze a requirements.txt file.")

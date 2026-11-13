@@ -79,22 +79,14 @@ def parse_from_line(
             span=(start_index, start_index) if start_index != -1 else None,
         )
 
-    if requirement.marker is not None:
-        start_index = line.find(";")
-
-        raise RequirementParseError(
-            f"markers are not allowed: {requirement.marker}",
-            source=line,
-            span=(start_index, start_index) if start_index != -1 else None,
-        )
-
     name = requirement.name
     extras = [x.lower() for x in list(requirement.extras)]
     specs = [str(x) for x in requirement.specifier]
+    marker = str(requirement.marker) if requirement.marker is not None else None
 
-    if not language.supports_extras_and_specs and (extras or specs):
+    if not language.supports_qualifiers and (extras or specs or marker):
         raise RequirementParseError(
-            f"{language.value} does not support extras and/or specs",
+            f"{language.value} does not support qualifiers (extras, specs or markers)",
             source=line,
         )
 
@@ -103,6 +95,7 @@ def parse_from_line(
         extras=extras,
         specs=specs,
         language=language,
+        marker=marker,
     )
 
 

@@ -46,6 +46,22 @@ def test_freeze_everything():
     assert frozen[2] is os_requirement
 
 
+def test_freeze_keep_marker():
+    pandas_requirement = NamedRequirement(name=pandas_library.name, marker='python_version >= "3.8"')
+
+    frozen = freeze(
+        [
+            pandas_requirement,
+        ],
+        freeze_only_if_required=False,
+        version_finder=LocalSitePackageVersionFinder(),
+    )
+
+    assert frozen[0] is not pandas_requirement
+    assert frozen[0].specs == [f"=={pandas.__version__}"]
+    assert frozen[0].marker == 'python_version >= "3.8"'
+
+
 def test_only_necessary():
     pytest_requirement = NamedRequirement(name=pytest_library.name)
     pandas_requirement = NamedRequirement(name=pandas_library.name)
