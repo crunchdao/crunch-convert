@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import DefaultDict, Dict, List, Optional, Union, cast
+from typing import cast
 
 from crunch_convert._model import RequirementLanguage
 from crunch_convert.notebook._model import ImportedRequirement
@@ -7,30 +7,30 @@ from crunch_convert.notebook._utils import format_requirement_line
 from crunch_convert.requirements_txt._model import NamedRequirement
 from crunch_convert.requirements_txt._whitelist import Library, Whitelist
 
-Requirement = Union[NamedRequirement, ImportedRequirement]
+Requirement = NamedRequirement | ImportedRequirement
 
 
 def format_files_from_imported(
-    requirements: List[ImportedRequirement],
+    requirements: list[ImportedRequirement],
     *,
     header: str,
     whitelist: Whitelist,
-) -> Dict[RequirementLanguage, str]:
+) -> dict[RequirementLanguage, str]:
     return _format_files(
-        requirements=cast(List[Requirement], requirements),
+        requirements=cast(list[Requirement], requirements),
         header=header,
         whitelist=whitelist,
     )
 
 
 def format_files_from_named(
-    requirements: List[NamedRequirement],
+    requirements: list[NamedRequirement],
     *,
     header: str,
     whitelist: Whitelist,
-) -> Dict[RequirementLanguage, str]:
+) -> dict[RequirementLanguage, str]:
     return _format_files(
-        requirements=cast(List[Requirement], requirements),
+        requirements=cast(list[Requirement], requirements),
         header=header,
         whitelist=whitelist,
     )
@@ -38,13 +38,13 @@ def format_files_from_named(
 
 def _format_files(
     *,
-    requirements: List[Requirement],
+    requirements: list[Requirement],
     header: str,
     whitelist: Whitelist,
-) -> DefaultDict[RequirementLanguage, str]:
-    files: DefaultDict[RequirementLanguage, str] = defaultdict(str)
+) -> defaultdict[RequirementLanguage, str]:
+    files: defaultdict[RequirementLanguage, str] = defaultdict(str)
 
-    requirements_by_language: Dict[RequirementLanguage, List[Requirement]] = defaultdict(list)
+    requirements_by_language: dict[RequirementLanguage, list[Requirement]] = defaultdict(list)
     for requirement in requirements:
         requirements_by_language[requirement.language].append(requirement)
 
@@ -59,13 +59,13 @@ def _format_files(
 
 
 def _format_files_filtered(
-    requirements: List[Requirement],
+    requirements: list[Requirement],
     *,
     header: str,
     whitelist: Whitelist,
 ):
-    third_party: List[str] = []
-    standard: List[str] = []
+    third_party: list[str] = []
+    standard: list[str] = []
 
     for requirement in requirements:
         library = find_library(requirement, whitelist)
@@ -127,10 +127,10 @@ def _format_files_filtered(
 
 def format_line(
     name: str,
-    alias: Optional[str],
-    extras: List[str],
-    specs: List[str],
-    marker: Optional[str] = None,
+    alias: str | None,
+    extras: list[str],
+    specs: list[str],
+    marker: str | None = None,
 ) -> str:
     line = format_requirement_line(name, extras, specs)
 
@@ -154,7 +154,7 @@ def get_fallback_name(
 
 def get_marker(
     requirement: Requirement,
-) -> Optional[str]:
+) -> str | None:
     if isinstance(requirement, NamedRequirement):
         return requirement.marker
 
@@ -164,7 +164,7 @@ def get_marker(
 def find_library(
     requirement: Requirement,
     whitelist: Whitelist,
-) -> Optional[Library]:
+) -> Library | None:
     if isinstance(requirement, ImportedRequirement):
         name = requirement.name
         if name:

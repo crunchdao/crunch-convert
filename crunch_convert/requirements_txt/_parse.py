@@ -1,5 +1,4 @@
 import re
-from typing import List, Optional, Tuple
 
 from packaging.requirements import InvalidRequirement as _PackagingInvalidRequirement
 from packaging.requirements import Requirement as _PackagingRequirements
@@ -19,7 +18,7 @@ class RequirementParseError(ValueError):
         self,
         message: str,
         source: str,
-        span: Optional[Tuple[int, int]] = None,
+        span: tuple[int, int] | None = None,
     ) -> None:
         super().__init__()
 
@@ -41,7 +40,7 @@ def parse_from_line(
     *,
     language: RequirementLanguage = RequirementLanguage.PYTHON,
     requirement_line: str,
-) -> Optional[NamedRequirement]:
+) -> NamedRequirement | None:
     line = re.sub('#.*', '', requirement_line).strip()
     if not line:
         return None
@@ -104,7 +103,7 @@ def parse_from_file(
     file_content: str,
     language: RequirementLanguage = RequirementLanguage.PYTHON,
 ):
-    named_requirements: List[NamedRequirement] = []
+    named_requirements: list[NamedRequirement] = []
 
     for line in file_content.splitlines():
         named_requirement = parse_from_line(

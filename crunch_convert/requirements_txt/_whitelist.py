@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass
 from io import UnsupportedOperation
-from typing import Any, DefaultDict, Dict, List, Optional, Set, Tuple, cast, overload
+from typing import Any, cast, overload
 
 import requests
 
@@ -12,7 +12,7 @@ from crunch_convert._model import RequirementLanguage
 
 class MultipleLibraryAliasCandidateException(Exception):
 
-    def __init__(self, alias: str, names: Set[str]):
+    def __init__(self, alias: str, names: set[str]):
         super().__init__(f"multiple library match the alias")
         self.alias = alias
         self.names = names
@@ -22,7 +22,7 @@ class MultipleLibraryAliasCandidateException(Exception):
 class Library:
     language: RequirementLanguage
     name: str
-    aliases: List[str]
+    aliases: list[str]
     standard: bool
     freeze: bool
 
@@ -45,7 +45,7 @@ class Whitelist(ABC):
         *,
         language: RequirementLanguage = RequirementLanguage.PYTHON,
         name: str,
-    ) -> Optional[Library]:
+    ) -> Library | None:
         ...  # pragma: no cover
 
     @overload
@@ -54,7 +54,7 @@ class Whitelist(ABC):
         *,
         language: RequirementLanguage = RequirementLanguage.PYTHON,
         alias: str,
-    ) -> Optional[Library]:
+    ) -> Library | None:
         ...  # pragma: no cover
 
     @abstractmethod
@@ -62,13 +62,13 @@ class Whitelist(ABC):
         self,
         *,
         language: RequirementLanguage = RequirementLanguage.PYTHON,
-        name: Optional[str] = None,
-        alias: Optional[str] = None,
-    ) -> Optional[Library]:
+        name: str | None = None,
+        alias: str | None = None,
+    ) -> Library | None:
         pass  # pragma: no cover
 
 
-CacheCompositeKey = Tuple[RequirementLanguage, str]
+CacheCompositeKey = tuple[RequirementLanguage, str]
 
 
 class CachedWhitelist(Whitelist):
@@ -81,16 +81,16 @@ class CachedWhitelist(Whitelist):
 
         self._delegate = delegate
 
-        self._name_cache: Dict[CacheCompositeKey, Library] = {}
-        self._alias_cache: DefaultDict[CacheCompositeKey, Dict[str, Library]] = defaultdict(dict)
+        self._name_cache: dict[CacheCompositeKey, Library] = {}
+        self._alias_cache: defaultdict[CacheCompositeKey, dict[str, Library]] = defaultdict(dict)
 
     def find_library(
         self,
         *,
         language: RequirementLanguage = RequirementLanguage.PYTHON,
-        name: Optional[str] = None,
-        alias: Optional[str] = None,
-    ) -> Optional[Library]:
+        name: str | None = None,
+        alias: str | None = None,
+    ) -> Library | None:
         if name is not None:
             cached = self._name_cache.get((language, name.lower()))
             if cached is not None:
@@ -130,7 +130,7 @@ class CachedWhitelist(Whitelist):
 
     def _store_in_cache(
         self,
-        library: Optional[Library],
+        library: Library | None,
     ) -> None:
         if library is None:
             return
@@ -158,9 +158,9 @@ class CrunchHubWhitelist(Whitelist):
         self,
         *,
         language: RequirementLanguage = RequirementLanguage.PYTHON,
-        name: Optional[str] = None,
-        alias: Optional[str] = None,
-    ) -> Optional[Library]:
+        name: str | None = None,
+        alias: str | None = None,
+    ) -> Library | None:
         response = requests.get(
             f"{self._api_base_url}/v2/libraries",
             params={
@@ -177,8 +177,8 @@ class CrunchHubWhitelist(Whitelist):
         if not content:
             return None
 
-        alias_conflicting_names: Set[str] = set()
-        library: Optional[Library] = None
+        alias_conflicting_names: set[str] = set()
+        library: Library | None = None
 
         if name is not None:
             name = name.lower()  # used for case-insensitive comparison
@@ -205,7 +205,7 @@ class CrunchHubWhitelist(Whitelist):
 
     def _map_library(
         self,
-        item: Dict[str, Any],
+        item: dict[str, Any],
     ) -> Library:
         return Library(
             language=RequirementLanguage(item["language"]),
@@ -220,12 +220,12 @@ class LocalWhitelist(Whitelist):
 
     def __init__(
         self,
-        libraries: List[Library]
+        libraries: list[Library]
     ):
         super().__init__()
 
-        self._library_by_name: Dict[CacheCompositeKey, Library] = {}
-        self._libraries_by_alias: Dict[CacheCompositeKey, List[Library]] = defaultdict(list)
+        self._library_by_name: dict[CacheCompositeKey, Library] = {}
+        self._libraries_by_alias: dict[CacheCompositeKey, list[Library]] = defaultdict(list)
 
         for library in libraries:
             self._library_by_name[(library.language, library.name.lower())] = library
@@ -237,9 +237,9 @@ class LocalWhitelist(Whitelist):
         self,
         *,
         language: RequirementLanguage = RequirementLanguage.PYTHON,
-        name: Optional[str] = None,
-        alias: Optional[str] = None,
-    ) -> Optional[Library]:
+        name: str | None = None,
+        alias: str | None = None,
+    ) -> Library | None:
         if name is not None:
             return self._library_by_name.get((language, name.lower()))
 

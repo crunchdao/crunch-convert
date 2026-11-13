@@ -1,9 +1,7 @@
-from typing import Optional
-
 import libcst
 
 
-def is_r_import(original_node: libcst.CSTNode) -> Optional[str]:
+def is_r_import(original_node: libcst.CSTNode) -> str | None:
     is_assign = (
         isinstance(original_node, libcst.Assign)
         and len(original_node.targets) == 1

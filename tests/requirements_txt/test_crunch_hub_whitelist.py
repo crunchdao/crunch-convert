@@ -1,5 +1,3 @@
-from typing import Optional
-
 import pytest
 
 from crunch_convert import RequirementLanguage
@@ -29,7 +27,7 @@ def test_find_by_alias():
 
 
 def test_multiple_aliases():
-    def assert_cupy(library: Optional[Library]):
+    def assert_cupy(library: Library | None):
         assert library is not None
         assert library.name == "cupy-cuda11x"
         assert library.aliases == ["cupy", "cupyx"]

@@ -1,7 +1,7 @@
 import json
 import os
 import sys
-from typing import Optional, TextIO, cast
+from typing import TextIO, cast
 
 import click
 
@@ -55,7 +55,7 @@ def notebook(
             print=print_function,
             validate=True,
         )
-    except IOError as error:
+    except OSError as error:
         print(f"{notebook_file_path}: cannot read notebook file: {error}", file=sys.stderr)
         raise click.Abort()
     except json.JSONDecodeError as error:
@@ -96,7 +96,7 @@ def notebook(
 
         for requirement_language, content in requirements_files.items():
             real_content: str = content
-            original_content: Optional[str] = None
+            original_content: str | None = None
 
             if not no_freeze:
                 requirements = parse_from_file(
@@ -147,7 +147,7 @@ def requirements_txt():
 @click.argument("requirements-txt-file-path", type=click.Path(readable=True, dir_okay=False), required=False)
 def parse_command(
     language_name: str,
-    requirements_txt_file_path: Optional[str],
+    requirements_txt_file_path: str | None,
 ):
     language = RequirementLanguage[language_name.upper()]
 
@@ -190,7 +190,7 @@ def freeze_command(
     override: bool,
     only_if_required: bool,
     language_name: str,
-    requirements_txt_file_path: Optional[str],
+    requirements_txt_file_path: str | None,
 ):
     if requirements_txt_file_path == RequirementLanguage.PYTHON.txt_file_name:
         override = True

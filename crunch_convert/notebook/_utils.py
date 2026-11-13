@@ -1,13 +1,13 @@
 from string import whitespace
 from textwrap import indent
-from typing import List, Optional, TextIO
+from typing import TextIO
 
 
-def list_of_string_factory() -> List[str]:
+def list_of_string_factory() -> list[str]:
     return []
 
 
-def print_indented(text: str, file: Optional[TextIO] = None):
+def print_indented(text: str, file: TextIO | None = None):
     indented = indent(text, "   | ", lambda x: True)
 
     if indented.endswith("\n"):
@@ -29,7 +29,7 @@ def strip_hashes(input: str) -> str:
     return input.strip(whitespace + "#")
 
 
-def format_requirement_line(name: str, extras: List[str], specs: List[str]) -> str:
+def format_requirement_line(name: str, extras: list[str], specs: list[str]) -> str:
     line = name
 
     if extras:

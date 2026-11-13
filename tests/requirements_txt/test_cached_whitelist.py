@@ -1,5 +1,3 @@
-from typing import Optional
-
 import pytest
 
 from crunch_convert import RequirementLanguage
@@ -14,7 +12,7 @@ class DummyWhitelist(Whitelist):
         self.next_library = None
         self.call_count = 0
 
-    def reset(self, library: Optional[Library] = None):
+    def reset(self, library: Library | None = None):
         self.next_library = library
         self.call_count = 0
 
@@ -22,9 +20,9 @@ class DummyWhitelist(Whitelist):
         self,
         *,
         language: RequirementLanguage = RequirementLanguage.PYTHON,
-        name: Optional[str] = None,
-        alias: Optional[str] = None,
-    ) -> Optional[Library]:
+        name: str | None = None,
+        alias: str | None = None,
+    ) -> Library | None:
         self.call_count += 1
         return self.next_library
 

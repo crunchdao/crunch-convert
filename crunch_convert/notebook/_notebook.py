@@ -4,9 +4,11 @@ import os
 import py_compile
 import re
 from collections import defaultdict
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Callable, DefaultDict, Dict, List, Match, NamedTuple, Optional, Set, Tuple, Union, cast
+from re import Match
+from typing import Any, NamedTuple, cast
 
 import libcst
 import libcst.metadata
@@ -32,7 +34,7 @@ _CRUNCH_KEEP_NONE = "@crunch/keep:none"
 
 JUPYTER_MAGIC_COMMAND_PATTERN = r"^(\s*?)(!|%|pip3? )"
 
-_EMPTY_EXTRAS_AND_SPECS: Tuple[List[str], List[str]] = ([], [])
+_EMPTY_EXTRAS_AND_SPECS: tuple[list[str], list[str]] = ([], [])
 
 
 LogFunction = Callable[[str], None]
@@ -64,10 +66,10 @@ class NotebookCellParseError(ConverterError):
     def __init__(
         self,
         message: str,
-        parser_error: Optional[str],
+        parser_error: str | None,
         cell_source: str,
-        cell_index: Optional[int] = None,
-        cell_id: Optional[str] = None,
+        cell_index: int | None = None,
+        cell_id: str | None = None,
     ) -> None:
         super().__init__(message)
         self.parser_error = parser_error
@@ -90,9 +92,9 @@ _IgnoreImport = _IgnoreImportType()
 
 
 class ImportInfo(NamedTuple):
-    name: Optional[str]
-    extras: List[str]
-    specs: List[str]
+    name: str | None
+    extras: list[str]
+    specs: list[str]
 
     def __str__(self) -> str:
         return format_requirement_line(self.name or "", self.extras, self.specs)
@@ -115,9 +117,9 @@ class InconsistantLibraryVersionError(ConverterError):
 
 def _extract_import_version(
     log: LogFunction,
-    comment_node: Optional[libcst.Comment],
+    comment_node: libcst.Comment | None,
     bad_cell_handling: BadCellHandling,
-) -> Optional[Union[ImportInfo, _IgnoreImportType]]:
+) -> ImportInfo | _IgnoreImportType | None:
     if comment_node is None:
         log(f"skip version: no comment")
         return None
@@ -180,7 +182,7 @@ def _extract_import_version(
     )
 
 
-ImportNodeType = Union[libcst.Import, libcst.ImportFrom]
+ImportNodeType = libcst.Import | libcst.ImportFrom
 
 
 def _evaluate_name(node: libcst.CSTNode) -> str:
@@ -195,9 +197,9 @@ def _evaluate_name(node: libcst.CSTNode) -> str:
 def _convert_python_import(
     log: LogFunction,
     import_node: ImportNodeType,
-    comment_node: Optional[libcst.Comment],
+    comment_node: libcst.Comment | None,
     bad_cell_handling: BadCellHandling,
-) -> List[ImportedRequirement]:
+) -> list[ImportedRequirement]:
     if isinstance(import_node, libcst.Import):
         paths = [
             _evaluate_name(alias.name)
@@ -223,7 +225,7 @@ def _convert_python_import(
         specs,
     ) = cast(ImportInfo, import_info)
 
-    names: Set[str] = set()
+    names: set[str] = set()
     for path in paths:
         name = strip_packages(path)
         if name:
@@ -242,8 +244,8 @@ def _convert_python_import(
 
 
 def _add_to_packages(
-    imported_requirements: Dict[str, ImportedRequirement],
-    new_requirements: List[ImportedRequirement],
+    imported_requirements: dict[str, ImportedRequirement],
+    new_requirements: list[ImportedRequirement],
     log: LogFunction,
 ):
     for new in new_requirements:
@@ -352,7 +354,7 @@ class _KeepMode(Enum):
             raise NotImplementedError(f"keep mode: {self}")
 
     @staticmethod
-    def from_comment(comment: Optional[libcst.Comment]) -> Optional["_KeepMode"]:
+    def from_comment(comment: libcst.Comment | None) -> "_KeepMode | None":
         if comment is None:
             return None
 
@@ -376,10 +378,10 @@ class _ConstantUsageChecker(libcst.CSTVisitor):
     def __init__(self):
         super().__init__()
 
-        self.cell_id: Optional[str] = None
+        self.cell_id: str | None = None
 
-        self._surviving_globals: Set[str] = set()
-        self._deleted_globals: Set[str] = set()
+        self._surviving_globals: set[str] = set()
+        self._deleted_globals: set[str] = set()
 
         self._current_keep_mode = _KeepMode.NECESSARY
 
@@ -404,12 +406,12 @@ class _ConstantUsageChecker(libcst.CSTVisitor):
     def visit_AugAssign(self, node: libcst.AugAssign) -> None:
         self._extract_names_from_targets(node.target)
 
-    def _extract_names_from_target(self, node: libcst.CSTNode) -> List[libcst.Name]:
+    def _extract_names_from_target(self, node: libcst.CSTNode) -> list[libcst.Name]:
         if isinstance(node, libcst.Name):
             return [node]
 
         elif isinstance(node, (libcst.Tuple, libcst.List)):
-            names: List[libcst.Name] = []
+            names: list[libcst.Name] = []
 
             for element in node.elements:
                 names.extend(self._extract_names_from_target(element.value))
@@ -451,8 +453,8 @@ class _ConstantUsageChecker(libcst.CSTVisitor):
 
         self.cell_id = None
 
-    def check_references(self, cell_id: str, tree: libcst.metadata.MetadataWrapper) -> List[Warning]:
-        warnings: List[Warning] = []
+    def check_references(self, cell_id: str, tree: libcst.metadata.MetadataWrapper) -> list[Warning]:
+        warnings: list[Warning] = []
 
         if not self._deleted_globals:
             return warnings
@@ -512,14 +514,14 @@ class _CommentTransformer(libcst.CSTTransformer):
         self.cell_id = cell_id
         self.tree = tree
 
-        self.import_and_comment_nodes: List[Tuple[ImportNodeType, Optional[libcst.Comment]]] = []
-        self.r_import_names: List[str] = []
+        self.import_and_comment_nodes: list[tuple[ImportNodeType, libcst.Comment | None]] = []
+        self.r_import_names: list[str] = []
 
-        self._method_stack: List[str] = []
-        self._previous_import_node: Optional[ImportNodeType] = None
+        self._method_stack: list[str] = []
+        self._previous_import_node: ImportNodeType | None = None
         self._keep_mode = _KeepMode.NECESSARY
 
-        self.warnings: List[Warning] = []
+        self.warnings: list[Warning] = []
 
     def on_visit(
         self,
@@ -558,7 +560,7 @@ class _CommentTransformer(libcst.CSTTransformer):
         self,
         original_node: libcst.CSTNode,
         updated_node: libcst.CSTNode
-    ) -> Union[libcst.CSTNode, libcst.RemovalSentinel, libcst.FlattenSentinel[libcst.CSTNode]]:
+    ) -> libcst.CSTNode | libcst.RemovalSentinel | libcst.FlattenSentinel[libcst.CSTNode]:
         method = self._method_stack.pop()
         # print("leave", type(original_node), method)
 
@@ -574,7 +576,7 @@ class _CommentTransformer(libcst.CSTTransformer):
         if self._keep_mode.should_leave_untouched(original_node, is_r_import_node):
             return updated_node
 
-        nodes: List[libcst.CSTNode] = []
+        nodes: list[libcst.CSTNode] = []
 
         # control flow blocks have their comment attached to them
         if isinstance(original_node, libcst.BaseCompoundStatement) and original_node.leading_lines:
@@ -613,7 +615,7 @@ class _CommentTransformer(libcst.CSTTransformer):
 
         return libcst.FlattenSentinel(nodes)
 
-    def _handle_imports(self, original_node: libcst.CSTNode) -> Optional[bool]:
+    def _handle_imports(self, original_node: libcst.CSTNode) -> bool | None:
         """
         :rtype: bool | None: True if the node is an R import, None otherwise
         """
@@ -640,7 +642,7 @@ class _CommentTransformer(libcst.CSTTransformer):
                     (import_node, None)
                 )
 
-    def _to_lines(self, node: libcst.CSTNode) -> List[str]:
+    def _to_lines(self, node: libcst.CSTNode) -> list[str]:
         return self.tree.code_for_node(node).splitlines()
 
 
@@ -664,21 +666,21 @@ class _NotebookProcessor:
         self.bad_cell_handling = bad_cell_handling
         self.print = print
 
-        self.module: List[str] = []
+        self.module: list[str] = []
 
-        self.all_warnings: List[Warning] = []
-        self.cell_id_order: List[str] = []
+        self.all_warnings: list[Warning] = []
+        self.cell_id_order: list[str] = []
 
-        self.embedded_files: Dict[str, EmbeddedFile] = {}
-        self.imported_requirements: DefaultDict[RequirementLanguage, Dict[str, ImportedRequirement]] = defaultdict(dict)
+        self.embedded_files: dict[str, EmbeddedFile] = {}
+        self.imported_requirements: defaultdict[RequirementLanguage, dict[str, ImportedRequirement]] = defaultdict(dict)
 
         self.constant_usage_checker = _ConstantUsageChecker()
 
-        self.cell_ids_and_trees: List[Tuple[str, libcst.metadata.MetadataWrapper]] = []
+        self.cell_ids_and_trees: list[tuple[str, libcst.metadata.MetadataWrapper]] = []
 
     def extract_cell(
         self,
-        cell: Dict[str, Any],
+        cell: dict[str, Any],
         cell_id: str,
     ):
         def log(message: str):
@@ -713,7 +715,7 @@ class _NotebookProcessor:
         *,
         log: LogFunction,
         cell_id: str,
-        cell_source: List[str],
+        cell_source: list[str],
     ):
         source = "\n".join(
             re.sub(JUPYTER_MAGIC_COMMAND_PATTERN, _jupyter_replacer, line)
@@ -803,7 +805,7 @@ class _NotebookProcessor:
     def _extract_markdown_cell(
         self,
         log: LogFunction,
-        cell_source: List[str],
+        cell_source: list[str],
     ):
         if not len(cell_source):
             log(f"skip since empty")
@@ -817,7 +819,7 @@ class _NotebookProcessor:
         if next(iterator) != _KV_DIVIDER:
             return
 
-        source: Union[List[str], str] = []
+        source: list[str] | str = []
         valid = True
 
         try:
@@ -838,7 +840,7 @@ class _NotebookProcessor:
 
             source = "\n".join(source)
 
-            configuration: Dict[str, Any] = yaml.safe_load(source)
+            configuration: dict[str, Any] = yaml.safe_load(source)
 
             if not isinstance(configuration, dict):  # type: ignore
                 raise ValueError("root must be a dict")
@@ -922,15 +924,15 @@ def _validate(source_code: str):
 @dataclass(frozen=True)
 class FlattenNotebook:
     source_code: str
-    embedded_files: List[EmbeddedFile]
-    requirements: List["ImportedRequirement"]
-    warnings: List[Warning]
+    embedded_files: list[EmbeddedFile]
+    requirements: list["ImportedRequirement"]
+    warnings: list[Warning]
 
 
 def extract_from_cells(
-    cells: List[Any],
+    cells: list[Any],
     *,
-    print: Optional[LogFunction] = print,  # pyright: ignore[reportRedeclaration]
+    print: LogFunction | None = print,  # pyright: ignore[reportRedeclaration]
     validate: bool = True,
     bad_cell_handling: BadCellHandling = BadCellHandling.RAISE,
 ) -> FlattenNotebook:
@@ -978,7 +980,7 @@ def extract_from_cells(
 def extract_from_file(
     path: str,
     *,
-    print: Optional[LogFunction] = None,
+    print: LogFunction | None = None,
     validate: bool = True,
 ) -> FlattenNotebook:
     with open(path, encoding="utf-8") as fd:

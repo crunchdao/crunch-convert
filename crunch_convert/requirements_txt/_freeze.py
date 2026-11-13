@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Literal, Optional, overload
+from typing import Literal, overload
 
 import requests
 
@@ -10,33 +10,33 @@ from crunch_convert.requirements_txt._whitelist import Whitelist
 
 @overload
 def freeze(
-    requirements: List[NamedRequirement],
+    requirements: list[NamedRequirement],
     *,
     freeze_only_if_required: Literal[True],
     whitelist: Whitelist,
     version_finder: "VersionFinder",
-) -> List[NamedRequirement]:
+) -> list[NamedRequirement]:
     ...  # pragma: no cover
 
 
 @overload
 def freeze(
-    requirements: List[NamedRequirement],
+    requirements: list[NamedRequirement],
     *,
     freeze_only_if_required: Literal[False],
     version_finder: "VersionFinder",
-) -> List[NamedRequirement]:
+) -> list[NamedRequirement]:
     ...  # pragma: no cover
 
 
 def freeze(
-    requirements: List[NamedRequirement],
+    requirements: list[NamedRequirement],
     *,
     freeze_only_if_required: bool,
-    whitelist: Optional[Whitelist] = None,
+    whitelist: Whitelist | None = None,
     version_finder: "VersionFinder",
-) -> List[NamedRequirement]:
-    frozen_requirements: List[NamedRequirement] = []
+) -> list[NamedRequirement]:
+    frozen_requirements: list[NamedRequirement] = []
 
     for requirement in requirements:
         latest_version = _get_latest_version(
@@ -62,11 +62,11 @@ def freeze(
 
 def _get_latest_version(
     *,
-    whitelist: Optional[Whitelist] = None,
+    whitelist: Whitelist | None = None,
     requirement: NamedRequirement,
     version_finder: "VersionFinder",
     freeze_only_if_required: bool = True,
-) -> Optional[str]:
+) -> str | None:
     # don't overwrite existing specs
     if requirement.specs:
         return None
@@ -100,7 +100,7 @@ class VersionFinder(ABC):
         *,
         language: RequirementLanguage = RequirementLanguage.PYTHON,
         name: str
-    ) -> Optional[str]:
+    ) -> str | None:
         ...  # pragma: no cover
 
 
@@ -120,7 +120,7 @@ class CrunchHubVersionFinder(VersionFinder):
         *,
         language: RequirementLanguage = RequirementLanguage.PYTHON,
         name: str
-    ) -> Optional[str]:
+    ) -> str | None:
         response = requests.get(
             f"{self._api_base_url}/v1/libraries/{language.name}/{name}/latest",
             params={
@@ -143,7 +143,7 @@ class LocalSitePackageVersionFinder(VersionFinder):
         *,
         language: RequirementLanguage = RequirementLanguage.PYTHON,
         name: str
-    ) -> Optional[str]:
+    ) -> str | None:
         if language != RequirementLanguage.PYTHON:
             return None
 

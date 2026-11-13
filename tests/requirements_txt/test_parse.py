@@ -1,5 +1,4 @@
 from textwrap import dedent
-from typing import List
 
 import pytest
 from parameterized import parameterized  # type: ignore
@@ -144,8 +143,8 @@ def test_parse_url(
 def test_parse_marker(
     line: str,
     expected_name: str,
-    expected_extras: List[str],
-    expected_specs: List[str],
+    expected_extras: list[str],
+    expected_specs: list[str],
     expected_marker: str,
 ):
     requirement = parse_from_line(

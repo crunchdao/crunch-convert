@@ -1,11 +1,11 @@
-from typing import Any, Dict, List, Literal
+from typing import Any, Literal
 
 
 def cell(
     id: str,
     type: Literal["markdown", "code"],
-    source: List[str],
-) -> Dict[str, Any]:
+    source: list[str],
+) -> dict[str, Any]:
     return {
         "metadata": {
             "id": id,

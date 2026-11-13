@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import distutils.sysconfig
 import os
 from typing import Any
 
@@ -11,16 +10,16 @@ package = "crunch_convert"
 
 about: dict[str, Any] = {}
 here = os.path.abspath(os.path.dirname(__file__))
-with open(os.path.join(here, package, '__version__.py')) as f:
+with open(os.path.join(here, package, '__version__.py'), encoding='utf-8') as f:
     exec(f.read(), about)
 
-with open('requirements/default.txt') as fd:
+with open('requirements/default.txt', encoding='utf-8') as fd:
     requirements = fd.read().splitlines()
 
-with open('requirements/test.txt') as fd:
+with open('requirements/test.txt', encoding='utf-8') as fd:
     test_requirements = fd.read().splitlines()
 
-with open('README.md') as fd:
+with open('README.md', encoding='utf-8') as fd:
     readme = fd.read()
 
 setup(
@@ -33,7 +32,7 @@ setup(
     author_email=about['__author_email__'],
     url=about['__url__'],
     packages=find_packages(),
-    python_requires=">=3",
+    python_requires=">=3.10",
     install_requires=requirements,
     extras_require={
         'test': test_requirements,
@@ -44,7 +43,11 @@ setup(
     },
     classifiers=[
         'Intended Audience :: Developers',
-        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
+        'Programming Language :: Python :: 3.12',
+        'Programming Language :: Python :: 3.13',
+        'Programming Language :: Python :: 3.14',
     ],
     keywords='package development template'
 )

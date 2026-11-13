@@ -1,5 +1,8 @@
+import os
 import re
+import sys
 
+import pytest
 import requests
 
 from crunch_convert import RequirementLanguage
@@ -39,6 +42,10 @@ def test_python():
     assert latest == find_lastest_version_from_pypi(name)
 
 
+@pytest.mark.skipif(
+    bool(os.getenv("CI")) and sys.version_info[:2] != (3, 10),
+    reason="avoid spamming CRAN, only run once in the CI matrix",
+)
 def test_r():
     name = "tidyverse"
 

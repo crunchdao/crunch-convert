@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-from typing import List, Optional, Tuple
 
 from crunch_convert._model import RequirementLanguage
 from crunch_convert.notebook._utils import list_of_string_factory
@@ -8,16 +7,16 @@ from crunch_convert.notebook._utils import list_of_string_factory
 @dataclass()
 class ImportedRequirement:
     alias: str
-    name: Optional[str] = None
-    extras: List[str] = field(default_factory=list_of_string_factory)
-    specs: List[str] = field(default_factory=list_of_string_factory)
+    name: str | None = None
+    extras: list[str] = field(default_factory=list_of_string_factory)
+    specs: list[str] = field(default_factory=list_of_string_factory)
     language: RequirementLanguage = RequirementLanguage.PYTHON
 
     @property
     def extras_and_specs(self):
         return (self.extras, self.specs)
 
-    def merge(self, other: "ImportedRequirement") -> Tuple[bool, Optional[str]]:
+    def merge(self, other: "ImportedRequirement") -> tuple[bool, str | None]:
         """
         Merge requirements:
         - if name is missing or the same, then use other's name

@@ -1,7 +1,8 @@
 import json
 import os
+from collections.abc import Iterable
 from tempfile import TemporaryDirectory
-from typing import Iterable, List, cast
+from typing import cast
 
 import pytest
 from click.testing import CliRunner
@@ -13,7 +14,7 @@ from crunch_convert.cli import cli as cli_group
 def _get_notebook_paths() -> Iterable[str]:
     cloned_directory = os.getenv("CLONED_COMPETITIONS_REPOSITORY_PATH")
     if not cloned_directory:
-        return cast(List[str], [])
+        return cast(list[str], [])
 
     competitions_directory = os.path.join(cloned_directory, "competitions")
     for competition_name in os.listdir(competitions_directory):

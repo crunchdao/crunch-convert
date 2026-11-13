@@ -1,5 +1,4 @@
 import textwrap
-from typing import List, Tuple, Union
 
 import pytest
 from parameterized import parameterized  # type: ignore
@@ -787,7 +786,7 @@ def test_syntax(cell_content: str, expected: str):
         ],
     ),
 ])
-def test_scope(cell_contents: Union[str, List[str]], expected_locations: List[Tuple[str, int, int, str]]):
+def test_scope(cell_contents: str | list[str], expected_locations: list[tuple[str, int, int, str]]):
     if isinstance(cell_contents, str):
         cell_contents = [cell_contents]
 
