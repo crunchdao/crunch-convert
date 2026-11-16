@@ -150,6 +150,9 @@ class LocalSitePackageVersionFinder(VersionFinder):
         from importlib.metadata import PackageNotFoundError, distribution  # late import
 
         try:
-            return distribution(name).version
+            version = distribution(name).version
         except PackageNotFoundError:
             return None
+
+        # a local version (like `2.5.1+cu121` from the pytorch index) cannot be installed from pypi
+        return version.split("+", 1)[0]

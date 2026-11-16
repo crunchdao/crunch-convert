@@ -1,3 +1,5 @@
+from unittest.mock import MagicMock, patch
+
 import pandas
 
 from crunch_convert import RequirementLanguage
@@ -24,3 +26,15 @@ def test_python():
     )
 
     assert latest == pandas.__version__
+
+
+def test_python_local_version_stripped():
+    version_finder = LocalSitePackageVersionFinder()
+
+    with patch("importlib.metadata.distribution", return_value=MagicMock(version="2.5.1+cu121")):
+        latest = version_finder.find_latest(
+            language=RequirementLanguage.PYTHON,
+            name="torch"
+        )
+
+    assert latest == "2.5.1"
