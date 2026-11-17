@@ -207,3 +207,11 @@ def test_parse_extras_r():
         )
 
     assert "does not support qualifiers" in str(excinfo.value)
+
+
+def test_str():
+    requirement = parse_from_line(requirement_line="Torch[A] >=2  # comment ; python_version < '3.13'")
+    assert str(requirement) == "Torch[a]>=2"
+
+    requirement = parse_from_line(requirement_line="torch;python_version<'3.13'")
+    assert str(requirement) == 'torch; python_version < "3.13"'

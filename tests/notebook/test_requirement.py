@@ -151,3 +151,8 @@ def test_merge_different_full():
 
     assert not success
     assert message == "name, extras and specs are all different"
+
+
+def test_str():
+    assert "sklearn" == str(ImportedRequirement(alias="sklearn"))
+    assert "scikit-learn[a]>1" == str(ImportedRequirement(alias="sklearn", name="scikit-learn", extras=["a"], specs=[">1"]))

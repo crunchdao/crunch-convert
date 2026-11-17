@@ -16,6 +16,9 @@ class ImportedRequirement:
     def extras_and_specs(self):
         return (self.extras, self.specs)
 
+    def __str__(self) -> str:
+        return format_requirement_line(self.name or self.alias, self.extras, self.specs)
+
     def merge(self, other: "ImportedRequirement") -> tuple[bool, str | None]:
         """
         Merge requirements:

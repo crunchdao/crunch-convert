@@ -25,7 +25,12 @@ def strip_hashes(input: str) -> str:
     return input.strip(whitespace + "#")
 
 
-def format_requirement_line(name: str, extras: list[str], specs: list[str]) -> str:
+def format_requirement_line(
+    name: str,
+    extras: list[str],
+    specs: list[str],
+    marker: str | None = None,
+) -> str:
     line = name
 
     if extras:
@@ -33,5 +38,8 @@ def format_requirement_line(name: str, extras: list[str], specs: list[str]) -> s
 
     if specs:
         line += f"{','.join(specs)}"
+
+    if marker:
+        line += f"; {marker}"
 
     return line

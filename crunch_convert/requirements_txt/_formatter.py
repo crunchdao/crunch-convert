@@ -132,10 +132,7 @@ def format_line(
     specs: list[str],
     marker: str | None = None,
 ) -> str:
-    line = format_requirement_line(name, extras, specs)
-
-    if marker:
-        line += f"; {marker}"
+    line = format_requirement_line(name, extras, specs, marker)
 
     if alias and name != alias:
         line += f"  # alias of {alias}"
