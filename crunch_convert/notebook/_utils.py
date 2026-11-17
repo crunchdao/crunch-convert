@@ -3,10 +3,6 @@ from textwrap import indent
 from typing import TextIO
 
 
-def list_of_string_factory() -> list[str]:
-    return []
-
-
 def print_indented(text: str, file: TextIO | None = None):
     indented = indent(text, "   | ", lambda x: True)
 

@@ -1,15 +1,15 @@
 from dataclasses import dataclass, field
 
 from crunch_convert._model import RequirementLanguage
-from crunch_convert.notebook._utils import list_of_string_factory
+from crunch_convert.notebook._utils import format_requirement_line
 
 
 @dataclass()
 class ImportedRequirement:
     alias: str
     name: str | None = None
-    extras: list[str] = field(default_factory=list_of_string_factory)
-    specs: list[str] = field(default_factory=list_of_string_factory)
+    extras: list[str] = field(default_factory=list[str])
+    specs: list[str] = field(default_factory=list[str])
     language: RequirementLanguage = RequirementLanguage.PYTHON
 
     @property
