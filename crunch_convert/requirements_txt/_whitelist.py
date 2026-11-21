@@ -6,6 +6,8 @@ from io import UnsupportedOperation
 from typing import Any, cast, overload
 
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util import Retry
 
 from crunch_convert._model import RequirementLanguage
 
@@ -154,6 +156,19 @@ class CrunchHubWhitelist(Whitelist):
 
         self._api_base_url = api_base_url
 
+        adapter = HTTPAdapter(
+            max_retries=Retry(
+                total=3,
+                backoff_factor=1,
+                status_forcelist=[500, 502, 503, 504],
+                raise_on_status=False,
+            ),
+        )
+
+        self._session = requests.Session()
+        self._session.mount("http://", adapter)
+        self._session.mount("https://", adapter)
+
     def find_library(
         self,
         *,
@@ -161,7 +176,11 @@ class CrunchHubWhitelist(Whitelist):
         name: str | None = None,
         alias: str | None = None,
     ) -> Library | None:
-        response = requests.get(
+        """
+        Raises `requests.RequestException` when the API cannot be reached or answers with an error, after retrying the server errors.
+        """
+
+        response = self._session.get(
             f"{self._api_base_url}/v2/libraries",
             params={
                 "language": language.value,
@@ -170,8 +189,7 @@ class CrunchHubWhitelist(Whitelist):
             },
         )
 
-        if response.status_code != 200:
-            return None
+        response.raise_for_status()
 
         content = response.json().get("content", [])
         if not content:
