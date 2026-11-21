@@ -176,10 +176,6 @@ class CrunchHubWhitelist(Whitelist):
         name: str | None = None,
         alias: str | None = None,
     ) -> Library | None:
-        """
-        Raises `requests.RequestException` when the API cannot be reached or answers with an error, after retrying the server errors.
-        """
-
         response = self._session.get(
             f"{self._api_base_url}/v2/libraries",
             params={
